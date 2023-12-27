@@ -27,7 +27,7 @@ const ProjectTables = () => {
 
 
   useEffect(() => {
-    const alluser = storeUsers.filter((user) => user._id !== "65789584c6066495d6faf3f3")
+    const alluser = storeUsers.filter((user) => user._id !== "658c22fc82f17d2da1f57c70")
     setcurrentData(alluser)
   }, [storeUsers])
 

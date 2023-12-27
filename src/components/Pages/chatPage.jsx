@@ -33,7 +33,12 @@ export function Chat() {
                         // Set the current chat state with the chat data and messages data
                         const otherUserId = chatId.split('_').find(userid => userid !== id);
                         const user = storeUser.find(user => user._id === otherUserId);
-                        SetCurrentChat({ ...chatRoomDoc.data(), messages: messagesData, user });
+                        const sortedMessages = messagesData.slice().sort((a, b) => {
+                            const timeA = a.timestamp.seconds * 1000 + a.timestamp.nanoseconds / 1e6;
+                            const timeB = b.timestamp.seconds * 1000 + b.timestamp.nanoseconds / 1e6;
+                            return timeA - timeB;
+                        });
+                        SetCurrentChat({ ...chatRoomDoc.data(), messages: sortedMessages, user });
                     } else {
                         toast.info("Chat Room document not found");
                     }
@@ -44,9 +49,14 @@ export function Chat() {
         };
 
         fetchData();
-    }, [chatId, storeUser , id]);
+    }, [chatId, storeUser, id]);
 
 
+    // const sortedMessages = currentChat.messages.slice().sort((a, b) => {
+    //     const timeA = a.timestamp.seconds * 1000 + a.timestamp.nanoseconds / 1e6;
+    //     const timeB = b.timestamp.seconds * 1000 + b.timestamp.nanoseconds / 1e6;
+    //     return timeA - timeB;
+    // });
 
     // // console.log(currentChat)
     return (<>
@@ -84,6 +94,7 @@ export function Chat() {
                 </div>
 
                 <div>
+                            
                     {currentChat.messages.map((chat, index) => {
                         const milliseconds = chat.timestamp.seconds * 1000 + chat.timestamp.nanoseconds / 1e6;
                         const date = new Date(milliseconds);
@@ -108,7 +119,7 @@ export function Chat() {
                             </div>
 
                         </div>
-                    })}
+                    })} 
                 </div>
             </div>
             :

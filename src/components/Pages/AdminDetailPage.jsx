@@ -28,7 +28,7 @@ export function AdminDetailpage() {
     useEffect(() => {
 
         let CurrentUser = storeUser.find((userObject) => {
-            return userObject._id === "65789584c6066495d6faf3f3";
+            return userObject._id === "658c22fc82f17d2da1f57c70";
         });
 
         setUsers(CurrentUser)
@@ -63,7 +63,7 @@ export function AdminDetailpage() {
     //     try {
 
     //         setloading(true)
-    //         const response = await axios.post(`${serverURL}/api/users/65789584c6066495d6faf3f3/update_user_status`, {
+    //         const response = await axios.post(`${serverURL}/api/users/658c22fc82f17d2da1f57c70/update_user_status`, {
     //             status: selectedOption
     //         })
     //         // // console.log(response.data.user);
@@ -177,7 +177,7 @@ export function AdminDetailpage() {
 
         <div className="container">
             <div className="row gap-2  my-4 px-4 text-center">
-                <Link to={`/Admin/AdminDashboard/UserDetails/65789584c6066495d6faf3f3/UserChats`} className={`col ${style.Box}`}>
+                <Link to={`/Admin/AdminDashboard/UserDetails/658c22fc82f17d2da1f57c70/UserChats`} className={`col ${style.Box}`}>
                     <div>
                         Chats
                     </div>
@@ -185,7 +185,7 @@ export function AdminDetailpage() {
                         <img src="/chats.png" alt="chatimg" width={"30rem"} height={"30rem"} />
                     </div>
                 </Link>
-                <Link to={`/Admin/AdminDashboard/UserDetails/65789584c6066495d6faf3f3/Posts`} className={`col ${style.Box}`}>
+                <Link to={`/Admin/AdminDashboard/UserDetails/658c22fc82f17d2da1f57c70/Posts`} className={`col ${style.Box}`}>
                     <div>
                         Posts
                     </div>
