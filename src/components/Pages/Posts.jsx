@@ -9,6 +9,7 @@ import { selectAllPosts, updatePostStatus, addPinnedPosts, selectAllPinnedPosts 
 import { Button } from "reactstrap";
 import { DeleteModel } from "./DeleteModel";
 import { EditPost } from "./EditPost";
+// import { messaging } from "../../firebase";
 // import imageCompression from 'browser-image-compression';
 
 const serverURL = process.env.REACT_APP_SERVER_URL
@@ -50,11 +51,90 @@ export function Posts() {
     // // console.log(TotalPinned);
 
     return (<>
+        {/* <button onClick={async () => {
+           try {
+            await messaging.requestPermission();
+            console.log('Notification permission granted.');
+            const token = await messaging.getToken();
+            console.log('Token:', token);
+        } catch (err) {
+            console.error('Unable to get permission to notify.', err);
+        }
+             
+            // const message = {
+            //     notification: {
+            //         title: "Notif",
+            //         body: 'This is a Test Notification okay'
+            //     },
+            //     token: "dDhpuiwnS5eLnjKWt-Zjls:APA91bE_3jWCeUM1wSRbGSre-6pLGO2z4K4VtEvq114ezM2YJRMVaLyoULMY116nkJx9rXpNLEgSDuz7k1LyuEMnuj3jLL2VWVRRX34tARxBJJl3pH2r4HRZs2TXQ_NhWvfPPSLWSUcJ",
+            // };
+            // messaging.sendToDevice(message.token, message)
+            //     .then((response) => {
+            //         // Response is an array of message IDs sent to the device.
+            //         console.log('Successfully sent message:', response);
+            //     })
+            //     .catch((error) => {
+            //         console.log('Error sending message 11111:', error);
+            //     });
+            // messaging.send(message)
+            //     .then((response) => {
+            //         // Response is a message ID string.
+            //         console.log('Successfully sent message:', response);
+            //     })
+            //     .catch((error) => {
+            //         console.log('Error sending message:', error);
+            //     });
+        // try {
+        //         const fcmEndpoint = 'https://fcm.googleapis.com/v1/projects/myproject-b5ae1/messages:send';
+        //         const fcmAccessToken = 'Bearer ya29.ElqKBGN2Ri_Uz...PbJ_uNasm';
+        //         // const fcmAccessToken = 'Bearer eyBTrmHDRtOCXPcE1-N_y_:APA91bFNgjnbPOx1Oj-p9L-inI14n0Wkbb09FshCKRQC9airic_c0Q2EQxZ_3wqJtRXEYYPId08dDsi8jAdsdLQu0wDtAtOnK_OfI4VSRvFqEMAdOOd8TlZq8VKkucwtAs72etdrW5wU';
+
+        //         // Replace <token of destination app> with the actual FCM token of the destination app
+        //         const destinationToken = 'dDhpuiwnS5eLnjKWt-Zjls:APA91bE_3jWCeUM1wSRbGSre-6pLGO2z4K4VtEvq114ezM2YJRMVaLyoULMY116nkJx9rXpNLEgSDuz7k1LyuEMnuj3jLL2VWVRRX34tARxBJJl3pH2r4HRZs2TXQ_NhWvfPPSLWSUcJ';
+
+        //         const notificationPayload = {
+        //             "message": {
+        //                 "token": destinationToken,
+        //                 "notification": {
+        //                     "title": "FCM Message",
+        //                     "body": "This is a message from FCM okayy"
+        //                 },
+        //                 "webpush": {
+        //                     "headers": {
+        //                         "Urgency": "high"
+        //                     },
+        //                     "notification": {
+        //                         "body": "This is a message from FCM to web",
+        //                         "requireInteraction": true,
+        //                         "badge": "/events.png"
+        //                     }
+        //                 }
+        //             }
+        //         };
+
+        //         const axiosConfig = {
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //                 'Authorization': fcmAccessToken,
+        //             },
+        //         };
+
+        //         const notify = await axios.post(fcmEndpoint, notificationPayload, axiosConfig)
+        //         if (notify.status === 200) {
+        //             console.log(notify)
+        //             console.log(notify.data)
+        //         }
+        //     } catch (error) {
+        //         console.log(error)
+        //     }
+        }} className="p-2 border border-danger ">
+            Add notification
+        </button>
         <div className={`p-2  text-light ${style.Sheading} `}>
             <h2 className={style.Heading}>
                 All Post
             </h2>
-        </div>
+        </div> */}
 
         {/* <input type="file" name="" id="" onChange={(e) => { setMyfile(e.target.files[0]) }} />
         <button onClick={async () => {

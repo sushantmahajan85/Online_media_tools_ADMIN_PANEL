@@ -23,11 +23,21 @@
 
 // export default database;
 
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore"
+
+// import { getMessaging } from "firebase/messaging";
+// import  admin from "firebase-admin";
+
+// var serviceAccount = require("path/to/serviceAccountKey.json");
+
 // // import { getAnalytics } from "firebase/analytics";
 
-
+// admin.initializeApp({
+//     credential: admin.credential.cert(serviceAccount)
+//   });
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore"
+// import { getMessaging } from "firebase/messaging/sw";
+// import { getMessaging } from "firebase/messaging";
  const firebaseConfig = {
     apiKey: "AIzaSyBRcZs3nv3uHLH1LdN5Vp3dO2JUpA2LL3o",
     authDomain: "omd-app-76987.firebaseapp.com",
@@ -41,5 +51,6 @@ import { getFirestore } from "firebase/firestore"
 
 export const app =  initializeApp(firebaseConfig);
 export const db = getFirestore()
+// export const messaging = getMessaging(app);
 // // const analytics = getAnalytics(app);
 
