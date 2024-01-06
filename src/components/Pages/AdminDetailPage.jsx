@@ -21,7 +21,7 @@ export function AdminDetailpage() {
 
   useEffect(() => {
     let CurrentUser = storeUser.find((userObject) => {
-      return userObject._id === "658c276082f17d2da1f57c8e";
+      return userObject._id === "658c582ff1bc8978d2300823";
     });
 
     setUsers(CurrentUser);
@@ -55,7 +55,7 @@ export function AdminDetailpage() {
   //     try {
 
   //         setloading(true)
-  //         const response = await axios.post(`${serverURL}/api/users/658c276082f17d2da1f57c8e/update_user_status`, {
+  //         const response = await axios.post(`${serverURL}/api/users/658c582ff1bc8978d2300823/update_user_status`, {
   //             status: selectedOption
   //         })
   //         // // console.log(response.data.user);
@@ -193,7 +193,7 @@ export function AdminDetailpage() {
       <div className="container">
         <div className="row gap-2  my-4 px-4 text-center">
           <Link
-            to={`/Admin/AdminDashboard/UserDetails/658c276082f17d2da1f57c8e/UserChats`}
+            to={`/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats`}
             className={`col ${style.Box}`}
           >
             <div>Chats</div>
@@ -207,7 +207,7 @@ export function AdminDetailpage() {
             </div>
           </Link>
           <Link
-            to={`/Admin/AdminDashboard/UserDetails/658c276082f17d2da1f57c8e/Posts`}
+            to={`/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/Posts`}
             className={`col ${style.Box}`}
           >
             <div>Posts</div>
