@@ -22,9 +22,10 @@ const ProjectTables = () => {
   const toggle = () => setModal(!modal);
 
   useEffect(() => {
-    const alluser = storeUsers.filter(
+    let alluser = storeUsers.filter(
       (user) => user._id !== "658c582ff1bc8978d2300823"
     );
+    alluser = alluser.reverse();
     setcurrentData(alluser);
   }, [storeUsers]);
 
