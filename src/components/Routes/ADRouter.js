@@ -11,6 +11,7 @@ import { Chat } from "../Pages/chatPage";
 // import { AdminChatPage } from "../Pages/chatPageAdmin";
 // import { AdminChats } from "../Pages/chatsAdmin";
 import { AdminDetailpage } from "../Pages/AdminDetailPage";
+import { ReportRequests } from "../Pages/ReportRequests";
 const FullLayout = lazy(() => import("./ADFullLayout"));
 const Starter = lazy(() => import("../Home/Starter"));
 export const ThemeRoutes = [
@@ -33,6 +34,7 @@ export const ThemeRoutes = [
       // { path: "AdminDashboard/AdminChats/:id/:chatId/Chat", element: <PrivateRouteAdmin element={<AdminChatPage />} /> },
       
       { path: "AdminDashboard/Profile", exact: true, element: <PrivateRouteAdmin element={<AdminDetailpage />} /> },
+      { path: "AdminDashboard/ReportRequests", exact: true, element: <PrivateRouteAdmin element={<ReportRequests />} /> },
 
     ],
   },

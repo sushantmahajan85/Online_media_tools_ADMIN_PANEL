@@ -33,7 +33,7 @@ const Sidebar = () => {
 
         <Nav vertical className="sidebarNav">
 
-        <NavItem><strong> Admin </strong> </NavItem>
+          <NavItem><strong> Admin </strong> </NavItem>
           <NavItem className="sidenav-bg">
             <Link
               to={"/Admin/AdminDashboard/Profile"}
@@ -50,7 +50,7 @@ const Sidebar = () => {
             </Link>
           </NavItem>
 
-          
+
 
           <NavItem><strong> Home </strong> </NavItem>
           <NavItem className="sidenav-bg">
@@ -116,6 +116,21 @@ const Sidebar = () => {
               <img src={"/bumperPost.png"} width={"20px"} height={"20px"} alt="img" />
 
               <span className="ms-3 d-inline-block">Pinned Posts</span>
+            </Link>
+          </NavItem>
+          <NavItem><strong> Reported </strong> </NavItem>
+          <NavItem className="sidenav-bg">
+            <Link
+              to={"/Admin/AdminDashboard/ReportRequests"}
+              className={
+                location.pathname === "/Admin/AdminDashboard/ReportRequests"
+                  ? " text-primary bg-light fw-bold nav-link py-3 color"
+                  : "nav-link text-secondary py-3"
+              }
+            >
+              <img src={"/bumperPost.png"} width={"20px"} height={"20px"} alt="img" />
+
+              <span className="ms-3 d-inline-block">Report Requests</span>
             </Link>
           </NavItem>
 

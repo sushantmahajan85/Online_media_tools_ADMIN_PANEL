@@ -1,4 +1,4 @@
-.dropdown>div {
+.dropdown > div {
   padding: px 40px 8px 30px !important;
   text-align: center;
 }
@@ -45,7 +45,6 @@
 .Heading {
   color: white;
   padding-left: 2px;
-
 }
 
 .mainDashboard {
@@ -58,8 +57,6 @@
   font-size: 20px;
   border-radius: 20px;
   /* background-color: aliceblue; */
-
-
 }
 
 .inputDiv {
@@ -94,7 +91,6 @@
   border-radius: 5px;
   width: fit-content;
   height: fit-content;
-
 }
 
 .active {
@@ -149,7 +145,6 @@
 }
 
 .ProfileDIv2 {
-
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
   padding: 10px;
   border-radius: 10px;
@@ -169,7 +164,6 @@
   justify-content: space-between;
   align-items: center;
   gap: 2;
-
 }
 
 .InnerDivs3 img {
@@ -202,7 +196,6 @@
   position: relative;
   height: 360px;
   width: 25vw;
-
 }
 
 .imageDiv img {
@@ -215,7 +208,6 @@
   font-size: 15px;
   margin: auto;
   color: green;
-
 }
 
 .deletepost {
@@ -233,7 +225,6 @@
   top: 50%;
   left: 50%;
   transform: (-50%, 50%);
-
 }
 
 .MainContainermedia {
@@ -259,7 +250,6 @@
 }
 
 .methodButton {
-
   background-color: green;
   color: white;
   border: none;
@@ -272,13 +262,12 @@
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
   padding: 10px 20px;
   border-radius: 10px;
-
 }
 
 .BannerDiv h1 {
   text-align: center;
   font-size: 2rem;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: "Courier New", Courier, monospace;
 }
 
 .BannerContainer {
@@ -308,7 +297,6 @@
   outline: none;
 }
 
-
 .InputNameDiv {
   width: fit-content;
   border-radius: 20px;
@@ -325,7 +313,6 @@
 
 .inputFile {
   width: 20vw;
-
 }
 
 .soundScontainer {
@@ -339,12 +326,16 @@
 
 .soundDiv {
   width: 25vw;
-  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
 }
 
+.chatInput {
+  width: calc((100% - 260px) / 2);
+  left: 550px;
+  bottom: 10px;
+}
 
-
-@media (min-width:200px) and (max-width:500px) {
+@media (min-width: 200px) and (max-width: 500px) {
   .soundDiv {
     width: 80vw;
   }
@@ -356,9 +347,15 @@
   .inputFile {
     width: 40vw;
   }
+
+  .chatInput {
+    width: 60%;
+    left: 25%;
+    bottom: -40px;
+  }
 }
 
-@media (min-width:501px) and (max-width:900px) {
+@media (min-width: 501px) and (max-width: 900px) {
   .soundDiv {
     width: 45vw;
   }
@@ -370,25 +367,26 @@
   .InputNameDiv input {
     width: 40vw;
   }
+  .chatInput {
+    width: 50%;
+    left: 25%;
+    bottom: -40px;
+  }
 }
 
-
 .BannerButton {
-
   background-color: rgb(43, 169, 43);
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
   color: white;
   border-radius: 5px;
   padding: 5px 10px;
   border: none;
-
 }
 
 .BannerButton:hover {
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.1);
   color: rgb(53, 215, 53);
   color: white;
-
 }
 
 .soundDiv button {
@@ -447,18 +445,17 @@
   padding: 0.4rem;
 
   margin: 1rem 0;
-  border-radius: .5rem;
+  border-radius: 0.5rem;
   background-color: #ffffff;
 }
 
 .buttonApprove {
   background-color: rgb(37, 181, 37);
   border: none;
-  padding: .5rem;
-  
-  color: white;
-  border-radius: .6rem;
+  padding: 0.5rem;
 
+  color: white;
+  border-radius: 0.6rem;
 }
 
 .buttonApprove:hover {
@@ -467,22 +464,19 @@
 .buttonDisApprove {
   background-color: rgb(233, 42, 42);
   border: none;
-  padding: .5rem;
+  padding: 0.5rem;
   color: white;
-  border-radius: .6rem;
-
+  border-radius: 0.6rem;
 }
 
 .buttonDisApprove:hover {
   background-color: rgb(129, 4, 4);
 }
 
-
-
 .Box {
   background-color: white;
-  border-radius: .5rem;
-  padding: .6rem 1rem;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -496,14 +490,12 @@
   color: rgb(44, 44, 186);
 }
 
-
 .buttonAdd {
   background-color: orange;
   border: none;
-  padding: .5rem 1rem;
+  padding: 0.5rem 1rem;
   color: white;
-  border-radius: .6rem;
-
+  border-radius: 0.6rem;
 }
 
 .buttonAdd:hover {
@@ -513,10 +505,9 @@
 .buttonAdded {
   background-color: rgb(99, 21, 21);
   border: none;
-  padding: .5rem 1rem;
+  padding: 0.5rem 1rem;
   color: white;
-  border-radius: .6rem;
-
+  border-radius: 0.6rem;
 }
 
 .buttonAdded:hover {
@@ -526,28 +517,26 @@
 .buttonReject {
   background-color: cadetblue;
   border: none;
-  padding: .5rem 1rem;
+  padding: 0.5rem 1rem;
   color: white;
-  border-radius: .6rem;
-
+  border-radius: 0.6rem;
 }
 
 .buttonReject:hover {
   background-color: cadetblue;
 }
 .buttonBump {
-  background-color:green;
+  background-color: green;
   border: none;
-  padding: .5rem 1rem;
+  padding: 0.5rem 1rem;
   color: white;
-  border-radius: .6rem;
+  border-radius: 0.6rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 2;
-
 }
 
 .buttonBump:hover {
-  background-color:  rgb(44, 180, 44); 
+  background-color: rgb(44, 180, 44);
 }
