@@ -6,6 +6,9 @@ import { collection, getDocs, onSnapshot, addDoc, Timestamp } from "firebase/fir
 import { selecteUsers } from "../../Store/authSlice";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import axios from "axios";
+
+const serverURL = process.env.REACT_APP_SERVER_URL
 
 export function Chat() {
     const { id, chatId } = useParams()
@@ -83,19 +86,27 @@ export function Chat() {
 
 
     async function sendMessage(e) {
-        e.preventDefault();
-        const newMessage = {
-            type: "text",
-            lastMessageStatus: "Delivered",
-            imageUrl: null,
-            timestamp: Timestamp.fromDate(new Date()),
-            receiverId: otherUserId,
-            senderId: adminId,
-            message
+        try {
+            e.preventDefault();
+            const newMessage = {
+                type: "text",
+                lastMessageStatus: "Delivered",
+                imageUrl: null,
+                timestamp: Timestamp.fromDate(new Date()),
+                receiverId: otherUserId,
+                senderId: adminId,
+                message
+            }
+            const messagesCollectionRef = collection(db, "chats", chatId, "messages");
+            await addDoc(messagesCollectionRef, newMessage);
+            axios.post(`${serverURL}/api/notification/chat`, { message, receiverId: otherUserId, senderId: adminId }).catch((error) => console.log(error))
+        } catch (error) {
+            console.log(error);
+            toast.error("Someting went wrong")
         }
-        const messagesCollectionRef = collection(db, "chats", chatId, "messages");
-        await addDoc(messagesCollectionRef, newMessage);
-        setMessage("");
+        finally {
+            setMessage("");
+        }
     }
 
 
