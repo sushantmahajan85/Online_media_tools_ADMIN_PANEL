@@ -13,6 +13,8 @@ export function Chat() {
     const [currentMessages, setCurrentMessages] = useState([]);
     const storeUser = useSelector(selecteUsers);
     const [message, setMessage] = useState("");
+    const adminId = "658c582ff1bc8978d2300823";
+    const otherUserId = chatId.split("_").find(id => id !== adminId);
 
     useEffect(() => {
         function fetchMessages() {
@@ -87,8 +89,8 @@ export function Chat() {
             lastMessageStatus: "Delivered",
             imageUrl: null,
             timestamp: Timestamp.fromDate(new Date()),
-            receiverId: id,
-            senderId: currentChat.user._id,
+            receiverId: otherUserId,
+            senderId: adminId,
             message
         }
         const messagesCollectionRef = collection(db, "chats", chatId, "messages");
@@ -144,7 +146,7 @@ export function Chat() {
                         const milliseconds = chat.timestamp.seconds * 1000 + chat.timestamp.nanoseconds / 1e6;
                         const date = new Date(milliseconds);
                         return <div key={index} className="p-2">
-                            <div className={`d-flex ${chat.senderId === id ? `justify-content-end` : `justify-content-start`}    `}>
+                            <div className={`d-flex ${chat.senderId === adminId ? `justify-content-end` : `justify-content-start`}    `}>
                                 <div style={{ width: "80%" }}>
                                     {
                                         chat.imageUrl ? <div style={{ height: "50rem", width: "100%" }}>
@@ -152,7 +154,7 @@ export function Chat() {
                                         </div>
                                             :
 
-                                            <span className={`  ${chat.senderId === id ? `bg-info` : `bg-success`} p-1 my-2 rounded d-flex align-items-center justify-content-between`}>
+                                            <span className={`  ${chat.senderId === adminId ? `bg-info` : `bg-success`} p-1 my-2 rounded d-flex align-items-center justify-content-between`}>
                                                 {chat.message}
                                                 <span style={{ fontSize: ".7rem" }}>
                                                     {date.toLocaleString()}
@@ -173,7 +175,7 @@ export function Chat() {
                     No Chat Found
                 </p>
             </div>}
-        <div className={style.chatInput} style={{ position: "absolute", boxShadow: " rgba(0, 0, 0, 0.24) 0px 3px 8px" }}>
+        {adminId === id && <div className={style.chatInput} style={{ position: "absolute", boxShadow: " rgba(0, 0, 0, 0.24) 0px 3px 8px" }}>
             <form onSubmit={sendMessage} style={{ display: "flex" }}>
                 <input
                     style={{ width: "100%", padding: 10, border: "none", borderRadius: "10px 0 0 10px" }}
@@ -182,6 +184,6 @@ export function Chat() {
                 />
                 <button style={{ border: "none", padding: 15, textAlign: "center", borderRadius: "0 10px 10px 0", backgroundColor: "black", color: "white" }} type="submit"><i class="bi bi-send"></i></button>
             </form>
-        </div>
+        </div>}
     </div>)
 }
