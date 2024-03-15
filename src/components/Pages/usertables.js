@@ -8,8 +8,6 @@ import style from "./ui.module.css";
 import { useSelector } from "react-redux";
 import { selecteUsers } from "../../Store/authSlice";
 import { DeleteModel } from "./DeleteModel";
-import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
-import { db } from "../../firebase";
 
 const ProjectTables = () => {
   const storeUsers = useSelector(selecteUsers);
@@ -33,28 +31,11 @@ const ProjectTables = () => {
   }, [storeUsers]);
 
   async function handleUserChat(userId) {
-    try {
-      const chatRoomUsers = ["658c582ff1bc8978d2300823", userId].sort();
-      const chatRoomId = chatRoomUsers.join('_');
-      const q = query(collection(db, "chats"), where("chatRoomId", "==", chatRoomId));
-      const qsnapshot = await getDocs(q);
-      if (qsnapshot.docs.length === 0) {
-        // init new chat
-        const newChat = {
-          chatRoomId,
-          isRequested: "accepted",
-          users: chatRoomUsers,
-          timestamp: serverTimestamp(),
-          unreadCountFrom: 0,
-          unreadCountTo: 0,
-        }
-        const chatdocRef = doc(db, "chats", chatRoomId);
-        await setDoc(chatdocRef, newChat);
-      }
-      navigate(`/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats/${chatRoomId}/Chat`)
-    } catch (error) {
-      console.log(error);
-    }
+
+    const chatRoomUsers = ["658c582ff1bc8978d2300823", userId].sort();
+    const chatRoomId = chatRoomUsers.join('_');
+    navigate(`/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats/${chatRoomId}/Chat`)
+
   }
 
   // const handleDropdownChange = (e) => {
@@ -219,10 +200,10 @@ const ProjectTables = () => {
                           <i className="bi bi-trash3"></i>
                         </Button>
                       </td>
-                      <td>
+                      <td>{tdata.firstName &&
                         <Button onClick={() => handleUserChat(tdata._id)}>
                           <i class="bi bi-chat-left-fill"></i>
-                        </Button>
+                        </Button>}
                       </td>
                     </tr>
                   ))}

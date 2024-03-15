@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import style from "./ui.module.css"
 import { useParams } from "react-router-dom";
-import { db, } from "../../firebase";
-import { collection, getDocs, onSnapshot, addDoc, Timestamp, updateDoc, doc } from "firebase/firestore";
+import { db } from "../../firebase";
+import { collection, getDocs, onSnapshot, addDoc, Timestamp, updateDoc, doc, serverTimestamp, setDoc, getDoc } from "firebase/firestore";
 import { selecteUsers } from "../../Store/authSlice";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -88,6 +88,23 @@ export function Chat() {
     async function sendMessage(e) {
         try {
             e.preventDefault();
+            const chatDocRef = doc(db, "chats", chatId);
+            const chatDoc = await getDoc(chatDocRef);
+            if (!chatDoc.exists()) {
+                // init new chat
+                const newChat = {
+                    chatRoomId: chatId,
+                    isRequested: "accepted",
+                    users: [adminId, otherUserId],
+                    timestamp: serverTimestamp(),
+                    unreadCountFrom: 0,
+                    unreadCountTo: 0,
+                }
+                await setDoc(chatDocRef, newChat);
+                const newCreatedChat = await getDoc(chatDocRef);
+                const user = storeUser.find(user => user._id === otherUserId);
+                SetCurrentChat({ ...newCreatedChat.data(), user });
+            }
             const newMessage = {
                 type: "text",
                 lastMessageStatus: "Delivered",
@@ -99,8 +116,7 @@ export function Chat() {
             }
             const messagesCollectionRef = collection(db, "chats", chatId, "messages");
             await addDoc(messagesCollectionRef, newMessage);
-            const chatRef = doc(db, "chats", chatId);
-            await updateDoc(chatRef, { lastMessage: message, receiverId: otherUserId, senderId: adminId });
+            await updateDoc(chatDocRef, { lastMessage: message, receiverId: otherUserId, senderId: adminId });
             axios.post(`${serverURL}/api/notification/chat`, { message, receiverId: otherUserId, senderId: adminId }).catch((error) => console.log(error))
         } catch (error) {
             console.log(error);
