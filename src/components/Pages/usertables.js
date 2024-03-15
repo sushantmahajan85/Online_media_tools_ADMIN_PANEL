@@ -1,5 +1,5 @@
 import { CardBody, Table, Button } from "reactstrap";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import React from "react";
 import "react-dropdown/style.css";
@@ -8,6 +8,8 @@ import style from "./ui.module.css";
 import { useSelector } from "react-redux";
 import { selecteUsers } from "../../Store/authSlice";
 import { DeleteModel } from "./DeleteModel";
+import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
+import { db } from "../../firebase";
 
 const ProjectTables = () => {
   const storeUsers = useSelector(selecteUsers);
@@ -15,6 +17,7 @@ const ProjectTables = () => {
   const [deltedId, setDeletedId] = useState();
   const [deleteWhatUsers, setdeleteWhatUsers] = useState("");
   const [pContent, setpContent] = useState();
+  const navigate = useNavigate();
 
   const [currentData, setcurrentData] = useState();
   // const [selectedOption, setSelectedOption] = useState('Select..');
@@ -28,6 +31,31 @@ const ProjectTables = () => {
     alluser = alluser.reverse();
     setcurrentData(alluser);
   }, [storeUsers]);
+
+  async function handleUserChat(userId) {
+    try {
+      const chatRoomUsers = ["658c582ff1bc8978d2300823", userId].sort();
+      const chatRoomId = chatRoomUsers.join('_');
+      const q = query(collection(db, "chats"), where("chatRoomId", "==", chatRoomId));
+      const qsnapshot = await getDocs(q);
+      if (qsnapshot.docs.length === 0) {
+        // init new chat
+        const newChat = {
+          chatRoomId,
+          isRequested: "accepted",
+          users: chatRoomUsers,
+          timestamp: serverTimestamp(),
+          unreadCountFrom: 0,
+          unreadCountTo: 0,
+        }
+        const chatdocRef = doc(db, "chats", chatRoomId);
+        await setDoc(chatdocRef, newChat);
+      }
+      navigate(`/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats/${chatRoomId}/Chat`)
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   // const handleDropdownChange = (e) => {
   //   const selectedValue = e.target.value;
@@ -132,6 +160,7 @@ const ProjectTables = () => {
                     <th>Account</th>
                     {/* <th>Status</th> */}
                     <th>Action</th>
+                    <th>Chat</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -188,6 +217,11 @@ const ProjectTables = () => {
                           }}
                         >
                           <i className="bi bi-trash3"></i>
+                        </Button>
+                      </td>
+                      <td>
+                        <Button onClick={() => handleUserChat(tdata._id)}>
+                          <i class="bi bi-chat-left-fill"></i>
                         </Button>
                       </td>
                     </tr>
