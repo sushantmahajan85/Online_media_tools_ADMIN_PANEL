@@ -1,5 +1,5 @@
 import { CardBody, Table, Button } from "reactstrap";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import React from "react";
 import "react-dropdown/style.css";
@@ -15,6 +15,7 @@ const ProjectTables = () => {
   const [deltedId, setDeletedId] = useState();
   const [deleteWhatUsers, setdeleteWhatUsers] = useState("");
   const [pContent, setpContent] = useState();
+  const navigate = useNavigate();
 
   const [currentData, setcurrentData] = useState();
   // const [selectedOption, setSelectedOption] = useState('Select..');
@@ -28,6 +29,14 @@ const ProjectTables = () => {
     alluser = alluser.reverse();
     setcurrentData(alluser);
   }, [storeUsers]);
+
+  async function handleUserChat(userId) {
+
+    const chatRoomUsers = ["658c582ff1bc8978d2300823", userId].sort();
+    const chatRoomId = chatRoomUsers.join('_');
+    navigate(`/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats/${chatRoomId}/Chat`)
+
+  }
 
   // const handleDropdownChange = (e) => {
   //   const selectedValue = e.target.value;
@@ -132,6 +141,7 @@ const ProjectTables = () => {
                     <th>Account</th>
                     {/* <th>Status</th> */}
                     <th>Action</th>
+                    <th>Chat</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -189,6 +199,11 @@ const ProjectTables = () => {
                         >
                           <i className="bi bi-trash3"></i>
                         </Button>
+                      </td>
+                      <td>{tdata.firstName &&
+                        <Button onClick={() => handleUserChat(tdata._id)}>
+                          <i class="bi bi-chat-left-fill"></i>
+                        </Button>}
                       </td>
                     </tr>
                   ))}
