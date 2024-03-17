@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import React from "react";
 import "react-dropdown/style.css";
 import style from "./ui.module.css";
-// import { toast } from "react-toastify";
+import { toast } from "react-toastify";
+import axios from "axios";
 import { useSelector } from "react-redux";
 import { selecteUsers } from "../../Store/authSlice";
 import { DeleteModel } from "./DeleteModel";
 
+const serverURL = process.env.REACT_APP_SERVER_URL;
 const ProjectTables = () => {
   const storeUsers = useSelector(selecteUsers);
   // console.log(storeUsers);
@@ -31,11 +33,11 @@ const ProjectTables = () => {
   }, [storeUsers]);
 
   async function handleUserChat(userId) {
-
     const chatRoomUsers = ["658c582ff1bc8978d2300823", userId].sort();
-    const chatRoomId = chatRoomUsers.join('_');
-    navigate(`/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats/${chatRoomId}/Chat`)
-
+    const chatRoomId = chatRoomUsers.join("_");
+    navigate(
+      `/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats/${chatRoomId}/Chat`
+    );
   }
 
   // const handleDropdownChange = (e) => {
@@ -139,9 +141,10 @@ const ProjectTables = () => {
                     <th>Contact</th>
                     <th>Designation</th>
                     <th>Account</th>
-                    {/* <th>Status</th> */}
+
                     <th>Action</th>
                     <th>Chat</th>
+                    <th>Suspend</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -200,10 +203,49 @@ const ProjectTables = () => {
                           <i className="bi bi-trash3"></i>
                         </Button>
                       </td>
-                      <td>{tdata.firstName &&
-                        <Button onClick={() => handleUserChat(tdata._id)}>
-                          <i class="bi bi-chat-left-fill"></i>
-                        </Button>}
+                      <td>
+                        {tdata.firstName && (
+                          <Button onClick={() => handleUserChat(tdata._id)}>
+                            <i class="bi bi-chat-left-fill"></i>
+                          </Button>
+                        )}
+                      </td>
+
+                      <td>
+                        {tdata.firstName && !tdata.isSuspended && (
+                          <Button
+                            onClick={async () => {
+                              let response = await axios.put(
+                                `${serverURL}/api/users/suspend/${tdata._id}`
+                              );
+
+                              if (response && response.status === 200) {
+                                // setloading(false);
+                                toast.success(response.data.message);
+                                window.location.reload();
+                              }
+                            }}
+                          >
+                            <i class="bi-exclamation-octagon-fill"></i>
+                          </Button>
+                        )}
+                        {tdata.firstName && tdata.isSuspended && (
+                          <Button
+                            onClick={async () => {
+                              let response = await axios.put(
+                                `${serverURL}/api/users/unsuspend/${tdata._id}`
+                              );
+
+                              if (response && response.status === 200) {
+                                // setloading(false);
+                                toast.success(response.data.message);
+                                window.location.reload();
+                              }
+                            }}
+                          >
+                            <i class="bi bi-check2-circle"></i>
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}
