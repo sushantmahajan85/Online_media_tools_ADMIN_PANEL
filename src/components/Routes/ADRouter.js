@@ -13,6 +13,7 @@ import { Chat } from "../Pages/chatPage";
 import { AdminDetailpage } from "../Pages/AdminDetailPage";
 import { ReportRequests } from "../Pages/ReportRequests";
 import { SendNotification } from "../Pages/sendNotification";
+import { AddPartner } from "../Pages/addPartner";
 const FullLayout = lazy(() => import("./ADFullLayout"));
 const Starter = lazy(() => import("../Home/Starter"));
 export const ThemeRoutes = [
@@ -79,6 +80,11 @@ export const ThemeRoutes = [
         path: "AdminDashboard/sendnotification",
         exact: true,
         element: <PrivateRouteAdmin element={<SendNotification />} />,
+      },
+      {
+        path: "AdminDashboard/addPartner",
+        exact: true,
+        element: <PrivateRouteAdmin element={<AddPartner />} />,
       },
     ],
   },

@@ -194,6 +194,28 @@ const Sidebar = () => {
                 <span className="ms-3 d-inline-block">Send Notification</span>
               </Link>
             </NavItem>
+            <NavItem>
+              <strong> Notification </strong>{" "}
+            </NavItem>
+            <NavItem className="sidenav-bg">
+              <Link
+                to={"/Admin/AdminDashboard/addPartner"}
+                className={
+                  location.pathname === "/Admin/AdminDashboard/addPartner"
+                    ? " text-primary bg-light fw-bold nav-link py-3 color"
+                    : "nav-link text-secondary py-3"
+                }
+              >
+                <img
+                  src={"/posts.png"}
+                  width={"20px"}
+                  height={"20px"}
+                  alt="img"
+                />
+
+                <span className="ms-3 d-inline-block">Add Partner</span>
+              </Link>
+            </NavItem>
           </Nav>
         </div>
       </div>
