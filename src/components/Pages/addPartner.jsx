@@ -1,14 +1,18 @@
 import React from "react";
 import style from "./ui.module.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { Loader } from "../Loader/loader";
+import { Table } from "reactstrap";
+import { Button } from "reactstrap";
+
 import imageCompression from "browser-image-compression";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 export function AddPartner() {
   const [logo, setLogo] = useState(null);
+  const [partners, setPartners] = useState([]);
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
   const [loading, setloading] = useState(false);
@@ -18,6 +22,23 @@ export function AddPartner() {
     setLogo(file);
   };
 
+  useEffect(() => {
+    async function fetchPartners() {
+      setloading(true);
+      try {
+        const partners = await axios.get(`${serverURL}/api/users/allpartners`);
+        console.log(partners);
+        setPartners(partners.data.allpartners);
+        toast.success("Partners fetched");
+      } catch (error) {
+        console.log(error);
+        toast.error("Failed to fetch Partners");
+      } finally {
+        setloading(false);
+      }
+    }
+    fetchPartners();
+  }, []);
   const handleSubmit = async (e) => {
     e.preventDefault();
     setloading(true);
@@ -73,7 +94,7 @@ export function AddPartner() {
   return (
     <>
       <div className={`p-2  text-light ${style.Sheading} `}>
-        <h2 className={style.Heading}>Add Partner</h2>
+        <h2 className={style.Heading}>Partners</h2>
       </div>
       <form
         onSubmit={handleSubmit}
@@ -115,7 +136,42 @@ export function AddPartner() {
           Submit
         </button>
       </form>
-
+      <div style={{ marginTop: "3rem" }}>
+        <Table>
+          <thead>
+            <th>Link</th>
+            <th>Description</th>
+            {/* <th>Status</th> */}
+            <th>Delete</th>
+            {/* <th>Action</th> */}
+          </thead>
+          <tbody>
+            {partners.map(({ _id, link, description, logo }) => (
+              <tr key={_id} className="border-top">
+                <td>{link}</td>
+                <td>{description}</td>
+                <td>
+                  <div className="col d-flex align-items-center justify-content-center">
+                    <Button
+                      className="Reject"
+                      onClick={() => {
+                        // setDeletedId(pst._id);
+                        // setModal(!modal);
+                        // setdeleteWhatUsers("Post");
+                        // setpContent(
+                        //   " Are you sure you want to Delete  this Post? This action cannot be undone."
+                        // );
+                      }}
+                    >
+                      <i className="bi bi-trash3"></i>
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </div>
       <Loader loading={loading} />
     </>
   );

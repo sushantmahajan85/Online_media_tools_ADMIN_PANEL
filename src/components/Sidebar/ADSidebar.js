@@ -195,7 +195,7 @@ const Sidebar = () => {
               </Link>
             </NavItem>
             <NavItem>
-              <strong> Notification </strong>{" "}
+              <strong> Partner </strong>{" "}
             </NavItem>
             <NavItem className="sidenav-bg">
               <Link
@@ -213,7 +213,7 @@ const Sidebar = () => {
                   alt="img"
                 />
 
-                <span className="ms-3 d-inline-block">Add Partner</span>
+                <span className="ms-3 d-inline-block">Partners</span>
               </Link>
             </NavItem>
           </Nav>
