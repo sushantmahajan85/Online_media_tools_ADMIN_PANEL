@@ -138,7 +138,7 @@ export function EditPost(props) {
                     />
                     {/* <input type="t" placeholder='' name='postContent' id='postContent' /> */}
                   </div>
-                  <div className="col p-1">
+                  {/* <div className="col p-1">
                     <div className="my-2 fw-bolder ">
                       <label htmlFor="postDescription">Post Description</label>
                     </div>
@@ -159,8 +159,8 @@ export function EditPost(props) {
                       }}
                       className="border-0 rounded p-1 "
                     />
-                    {/* <input type="t" placeholder='' name='postContent' id='postContent' /> */}
-                  </div>
+                    
+                  </div> */}
                   <div className="col p-1">
                     <div className="my-2 fw-bolder ">
                       <label htmlFor="postDescription">
