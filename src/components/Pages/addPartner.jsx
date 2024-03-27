@@ -154,13 +154,16 @@ export function AddPartner() {
                   <div className="col d-flex align-items-center justify-content-center">
                     <Button
                       className="Reject"
-                      onClick={() => {
-                        // setDeletedId(pst._id);
-                        // setModal(!modal);
-                        // setdeleteWhatUsers("Post");
-                        // setpContent(
-                        //   " Are you sure you want to Delete  this Post? This action cannot be undone."
-                        // );
+                      onClick={async () => {
+                        let response = await axios.delete(
+                          `${serverURL}/api/users/delpartner/${_id}`
+                        );
+                        if (response && response.status === 200) {
+                          toast.success(response.data.message);
+                          window.location.reload();
+                        } else {
+                          toast.error("failed to delete partner");
+                        }
                       }}
                     >
                       <i className="bi bi-trash3"></i>
