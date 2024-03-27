@@ -129,8 +129,8 @@ export function AdminDetailpage() {
                     <span>{user.LinkedIn}</span>
                   </p>
                   <p>
-                    <span className="fw-bold">Skypa</span> :{" "}
-                    <span>{user.Skypa}</span>
+                    <span className="fw-bold">Skype</span> :{" "}
+                    <span>{user.Skype}</span>
                   </p>
                   <p>
                     <span className="fw-bold">Telegram</span> :{" "}
