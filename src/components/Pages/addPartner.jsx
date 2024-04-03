@@ -13,6 +13,7 @@ const serverURL = process.env.REACT_APP_SERVER_URL;
 export function AddPartner() {
   const [logo, setLogo] = useState(null);
   const [partners, setPartners] = useState([]);
+  const [btntext, setBtntext] = useState("");
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
   const [loading, setloading] = useState(false);
@@ -46,6 +47,7 @@ export function AddPartner() {
     const formData = new FormData();
     formData.append("link", link);
     formData.append("description", description);
+    formData.append("btntext", btntext);
 
     if (logo) {
       const options = {
@@ -60,6 +62,7 @@ export function AddPartner() {
         logo,
         description,
         link,
+        btntext,
       });
     }
     try {
@@ -89,6 +92,7 @@ export function AddPartner() {
     setLink("");
     setLogo("");
     setDescription("");
+    setBtntext("");
   };
 
   return (
@@ -120,6 +124,15 @@ export function AddPartner() {
             type="text"
             value={link}
             onChange={(e) => setLink(e.target.value)}
+            style={{ width: "100%", padding: "5px" }}
+          />
+        </div>
+        <div style={{ marginBottom: "15px" }}>
+          <label style={{ marginRight: "10px" }}>BtnText:</label>
+          <input
+            type="text"
+            value={btntext}
+            onChange={(e) => setBtntext(e.target.value)}
             style={{ width: "100%", padding: "5px" }}
           />
         </div>
