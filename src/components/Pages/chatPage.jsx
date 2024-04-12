@@ -175,7 +175,7 @@ export function Chat() {
                         const milliseconds = chat.timestamp.seconds * 1000 + chat.timestamp.nanoseconds / 1e6;
                         const date = new Date(milliseconds);
                         return <div key={index} className="p-2">
-                            <div className={`d-flex ${chat.senderId === adminId ? `justify-content-end` : `justify-content-start`}    `}>
+                            <div className={`d-flex ${chat.senderId === id ? `justify-content-end` : `justify-content-start`}    `}>
                                 <div style={{ width: "80%" }}>
                                     {
                                         chat.imageUrl ? <div style={{ height: "50rem", width: "100%" }}>
