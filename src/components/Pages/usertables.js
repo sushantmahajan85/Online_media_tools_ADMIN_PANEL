@@ -204,7 +204,7 @@ const ProjectTables = () => {
                         </Button>
                       </td>
                       <td>
-                        {tdata.firstName && (
+                        {tdata.isverified && (
                           <Button onClick={() => handleUserChat(tdata._id)}>
                             <i class="bi bi-chat-left-fill"></i>
                           </Button>
