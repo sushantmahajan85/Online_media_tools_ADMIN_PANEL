@@ -19,13 +19,6 @@ export function PinnedPost() {
     const [pContent, setpContent] = useState()
     // console.log(StorePinnedPosts);
 
-
-
-
-
-
-
-
     return (<>
         <div className={`p-2  text-light ${style.Sheading} `}>
             <h2 className={style.Heading}>
@@ -39,21 +32,21 @@ export function PinnedPost() {
                 <div className={style.containerContent}>
                     <div className={style.HeadingContent}>
                         <div className="row gap-2">
-                            <div className="col">
+                            <div className="col d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Media</h2>
                             </div>
-                            <div className="col">
+                            <div className="col d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Content</h2>
                             </div>
 
-                            <div className="col">
+                            <div className="col d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Posted by</h2>
                             </div>
-                            <div className="col">
+                            <div className="col d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Posted Date</h2>
                             </div>
 
-                            <div className="col">
+                            <div className="col d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Action</h2>
                             </div>
 
@@ -62,13 +55,16 @@ export function PinnedPost() {
                     {StorePinnedPosts.map((pst, index) => {
                         return <div key={index} className={style.Content}>
                             <div className="row">
-                                {pst.postMediaUrl &&
+                                {pst.postMediaUrl ?
                                     <div className="col">
                                         <div>
                                             <img src={pst.postMediaUrl} alt="PostMedia" style={{ borderRadius: "1rem" }} width={"120rem"} height={"120rem"} />
-
                                         </div>
                                     </div>
+                                    :
+                                    <div className="col  d-flex align-items-center justify-content-center">
+                                    <h2 className="fw-medium fs-6 text-muted">No Media</h2>
+                                </div>
                                 }
                                 <div className="col  d-flex align-items-center justify-content-center">
                                     <h2 className="fw-medium fs-6">{pst.postContent}</h2>

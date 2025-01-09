@@ -17,8 +17,11 @@ const Starter = () => {
 
   useEffect(() => {
     let suspendedUserSum = 0;
+    // console.log(storeusers.length);
+    // console.log(storeusers[0])
     storeusers.forEach((userobjects) => {
-      if (userobjects.status === false) {
+      if (userobjects.isSuspended === true) {
+        //console.log(userobjects)
         suspendedUserSum++;
       }
     })
@@ -50,7 +53,7 @@ const Starter = () => {
     <div className="p-3">
       <div className={`${style.mainDashboard} `}>
         <h2>
-          Satatistics
+          Statistics
         </h2>
         <div >
 

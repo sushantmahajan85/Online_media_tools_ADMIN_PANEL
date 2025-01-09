@@ -35,10 +35,6 @@ export function Posts() {
     const [postData, setpostData] = useState()
     const [TotalPinned, setTotalPinned] = useState(0)
 
-
-
-
-
     useEffect(() => {
         let MyPinnedPosts = 0;
         StorePinnedPosts.forEach((userobjects) => {
@@ -183,72 +179,77 @@ export function Posts() {
 
         {StorePosts && StorePosts.length > 0 ?
             <div className="my-2 p-2">
-
                 <div className={style.containerContent}>
                     <div className={style.HeadingContent}>
                         <div className="row gap-2">
-                            <div className="col">
+                            <div className="col  d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Media</h2>
                             </div>
-                            <div className="col">
+                            <div className="col  d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Content</h2>
                             </div>
 
-                            <div className="col">
+                            <div className="col  d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Posted by</h2>
                             </div>
-                            <div className="col">
+                            <div className="col  d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Posted Date</h2>
                             </div>
-                            <div className="col">
+                            <div className="col  d-flex align-items-center justify-content-center">
                                 <h2 className="fw-bold fs-5">Status</h2>
                             </div>
-
+                            {/* <div className="col  d-flex align-items-center justify-content-center">
+                                <h2 className="fw-bold fs-5">LinkedIn</h2>
+                            </div> */}
                         </div>
                     </div>
-                    {StorePosts.map((pst, index) => {
+                    {StorePosts.map((post, index) => {
                         return <div key={index} className={style.Content}>
-                            <div className="row gap-2 p-2">
-                                <div className="row gap-2 p-1">
-                                    {pst.postMediaUrl &&
-                                        <div className="col">
-                                            <div>
-                                                <img src={pst.postMediaUrl} alt="PostMedia" style={{ borderRadius: "1rem" }} width={"120rem"} height={"120rem"} />
+                            <div className="row gap-2 p-2 ">
+                                <div className="row gap-2 p-1 ">
+                                {post.postMediaUrl ?
+                                    <div className="col  d-flex align-items-center justify-content-center ">
+                                        <div>
+                                            <img src={post.postMediaUrl} alt="PostMedia" style={{ borderRadius: "1rem" }} width={"120rem"} height={"120rem"} />
 
-                                            </div>
                                         </div>
-                                    }
+                                    </div>
+                                    :
                                     <div className="col  d-flex align-items-center justify-content-center">
-                                        <h2 className="fw-medium fs-6">{pst.postContent}</h2>
+                                        <h2 className="fw-medium fs-6 text-muted">No media</h2>
+                                    </div>
+                                }
+                                    <div className="col d-flex align-items-center justify-content-center ">
+                                        <h2 className="fw-medium fs-6">{post.postContent}</h2>
                                     </div>
 
                                     <div className="col d-flex align-items-center justify-content-center">
-                                        <h2 className="fw-medium fs-6">{pst.userName}</h2>
+                                        <h2 className="fw-medium fs-6">{post.userName}</h2>
                                     </div>
                                     <div className="col d-flex align-items-center justify-content-center">
-                                        <h2 className="fw-medium fs-6">{pst.PostCreated ? pst.PostCreated.slice(0, 15) : 'NaN'}</h2>
+                                        <h2 className="fw-medium fs-6">{post.PostCreated ? post.PostCreated.slice(0, 15) : 'NaN'}</h2>
                                     </div>
                                     <div className="col d-flex align-items-center justify-content-center">
-                                        {pst.underApproval ? <span className="fw-bold fs-6 text-warning">Pending</span> : <div>
-                                            {pst.isApproved ? <span className="fw-bold fs-6 text-success">Approved</span> : <span className="fw-bold fs-6 text-danger">Disapproved</span>}
+                                        {post.underApproval ? <span className="fw-bold fs-6 text-warning">Pending</span> : <div>
+                                            {post.isApproved ? <span className="fw-bold fs-6 text-success">Approved</span> : <span className="fw-bold fs-6 text-danger">Disapproved</span>}
                                         </div>}
-
                                     </div>
+                                    
+                                    
                                 </div>
                                 <div className="row gap-2 p-1">
-
-
                                     <div className="col d-flex align-items-center justify-content-center">
 
+                                        {/* approve disapprove button */}
                                         <button onClick={async () => {
                                             try {
                                                 setloading(true)
-                                                let response = await axios.post(`${serverURL}/api/posts/${pst._id}/Approve_post`, { appproveStatus: pst.isApproved })
+                                                let response = await axios.post(`${serverURL}/api/posts/${post._id}/Approve_post`, { appproveStatus: post.isApproved })
 
                                                 if (response && response.status === 200) {
                                                     setloading(false)
                                                     toast.success(response.data.message)
-                                                    dispatch(updatePostStatus({ _id: pst._id, post: response.data.post }))
+                                                    dispatch(updatePostStatus({ _id: post._id, post: response.data.post }))
                                                 }
 
 
@@ -265,14 +266,15 @@ export function Posts() {
                                                 }
 
                                             }
-                                        }} className={pst.isApproved ? style.buttonDisApprove : style.buttonApprove} > {pst.isApproved ? 'Disapprove' : 'Approved'} </button>
+                                        }} className={post.isApproved ? style.buttonDisApprove : style.buttonApprove} > {post.isApproved ? 'Disapprove' : 'Approve'} </button>
 
                                     </div>
 
-                                    <div className="col d-flex align-items-center justify-content-center">
+                                        {/* add to pinned posts */}
+                                    <div className="col d-flex align-items-center justify-content-start">
                                         <button onClick={async () => {
 
-                                            if (pst.isPinned) {
+                                            if (post.isPinned) {
                                                 toast.info("Already Added")
                                                 return
                                             }
@@ -280,14 +282,14 @@ export function Posts() {
 
                                             try {
                                                 setloading(true)
-                                                let response = await axios.post(`${serverURL}/api/PinnedPosts/${pst._id}/add_Pinned_post`, { TotalPinned })
+                                                let response = await axios.post(`${serverURL}/api/PinnedPosts/${post._id}/add_Pinned_post`, { TotalPinned })
 
                                                 if (response && response.status === 200) {
                                                     setloading(false)
                                                     toast.success(response.data.message)
                                                     // console.log("response aya");
                                                     // console.log(response.data.newBumperpost);
-                                                    dispatch(addPinnedPosts({ postId: pst._id, NewBumperPost: response.data.newBumperpost, TotalPinned }))
+                                                    dispatch(addPinnedPosts({ postId: post._id, NewBumperPost: response.data.newBumperpost, TotalPinned }))
                                                 }
 
 
@@ -313,14 +315,13 @@ export function Posts() {
                                                 }
 
                                             }
-                                        }} className={pst.isPinned ? style.buttonAdded : style.buttonAdd} > {pst.isPinned ? "Added" : "Add"} </button>
+                                        }} className={post.isPinned ? style.buttonAdded : style.buttonAdd} > {post.isPinned ? "Added" : "Add to pinned posts"} </button>
 
                                     </div>
-
-
+                                        {/* edit post button */}
                                     <div onClick={() => {
                                         setmodalEdit(true)
-                                        setpostData(pst)
+                                        setpostData(post)
 
                                     }} style={{ cursor: "pointer" }} className="col d-flex align-items-center  justify-content-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" className="bi bi-pencil-square" viewBox="0 0 16 16">
@@ -329,22 +330,51 @@ export function Posts() {
                                         </svg>
 
                                     </div>
+                                    {/* delete post button */}
                                     <div className="col d-flex align-items-center justify-content-center">
                                         <Button className="Reject"
                                             onClick={() => {
-                                                setDeletedId(pst._id)
+                                                setDeletedId(post._id)
                                                 setModal(!modal);
                                                 setdeleteWhatUsers("Post")
                                                 setpContent(' Are you sure you want to Delete  this Post? This action cannot be undone.')
                                             }}
                                         ><i className="bi bi-trash3"></i></Button>
                                     </div>
+
+                                    {/* add to linked in button */}
+                                    <div className="col d-flex align-items-center justify-content-center"> 
+                                    <button onClick={async () => {
+                                            try {
+                                                setloading(true)
+                                                let response = await axios.post(`http://localhost:8000/api/posts/${post._id}/admin-Linkedin`)
+
+                                                if (response && response.status === 200) {
+                                                    setloading(false)
+                                                    toast.success(response.data.message)
+                                                    dispatch(updatePostStatus({ _id: post._id, post: response.data.post }))
+                                                }
+
+
+                                            } catch (error) {
+                                                setloading(false)
+                                                if (error) {
+                                                    if (error.response) {
+                                                        // console.log(error.response.data);
+                                                        // console.log(error.response.status);
+                                                        toast.error(error.response.data.message);
+                                                    } else {
+                                                        toast.error("Failed to add post to linkedin.");
+                                                    }
+                                                }
+
+                                            }
+                                        }} className={post.addedToAdminLinkedin ? style.buttonDisApprove : style.buttonApprove} > {post.addedToAdminLinkedin ? 'Already on LinkedIn' : 'Add to LinkedIn'} </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     })}
-
-
 
                 </div>
             </div> :

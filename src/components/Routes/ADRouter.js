@@ -14,6 +14,7 @@ import { AdminDetailpage } from "../Pages/AdminDetailPage";
 import { ReportRequests } from "../Pages/ReportRequests";
 import { SendNotification } from "../Pages/sendNotification";
 import { AddPartner } from "../Pages/addPartner";
+import {AllChats} from "../Pages/AllChats"
 const FullLayout = lazy(() => import("./ADFullLayout"));
 const Starter = lazy(() => import("../Home/Starter"));
 export const ThemeRoutes = [
@@ -71,6 +72,13 @@ export const ThemeRoutes = [
         exact: true,
         element: <PrivateRouteAdmin element={<AdminDetailpage />} />,
       },
+
+      {
+        path: "AdminDashboard/Chats",
+        exact: true,
+        element: <PrivateRouteAdmin element={<AllChats />} />,
+      },
+
       {
         path: "AdminDashboard/ReportRequests",
         exact: true,

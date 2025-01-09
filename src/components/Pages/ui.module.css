@@ -540,3 +540,16 @@
 .buttonBump:hover {
   background-color: rgb(44, 180, 44);
 }
+
+
+.searchBar {
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #ddd;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}

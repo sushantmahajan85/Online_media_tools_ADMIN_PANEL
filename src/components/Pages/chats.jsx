@@ -9,13 +9,14 @@ import { useSelector } from "react-redux";
 export function UserChats() {
     const StoreAllUsers = useSelector(selecteUsers)
     const { id } = useParams()
-    const [ChatUser, setChatUser] = useState([])
+    const [ChatUser, setChatUser] = useState([]) //other users who current user chatted with
 
     useEffect(() => {
         if (id) {
             const fetchData = async () => {
-                const querySnapshot = await getDocs(collection(db, "chats"));
+                const querySnapshot = await getDocs(collection(db, "chats")); //all chats
                 let Mychat = []
+                //get all chat room ids of the current user
                 querySnapshot.forEach((doc) => {
                     if (doc.id.includes(id)) {
                         Mychat.push({
@@ -41,9 +42,6 @@ export function UserChats() {
         }
     }, [id, StoreAllUsers]);
 
-
-
-
     return (<>
         <div className={`p-2  text-light ${style.Sheading} `}>
             <h2 className={style.Heading}>
@@ -57,8 +55,6 @@ export function UserChats() {
             <div className={style.containerContent}>
                 {ChatUser.length > 0 ?
                     <div>
-
-
                         <div className={style.HeadingContent}>
                             <div className="row gap-2 text-left">
                                 <div className="col">
@@ -82,7 +78,6 @@ export function UserChats() {
                                                 <img
                                                     src={userobj.otherUser.profileImageUrl}
                                                     className="rounded-circle"
-
                                                     alt="avatar"
                                                     width="45"
                                                     height="45"
@@ -109,12 +104,7 @@ export function UserChats() {
                         No Chats Found
                     </p></div>
                 }
-
-
-
             </div>
         </div>
-
-
     </>)
 }

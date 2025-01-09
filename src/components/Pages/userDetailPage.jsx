@@ -15,7 +15,7 @@ export function UserDetailpage() {
   // const storeAllPosts = useSelector(selectAllPosts)
   const { id } = useParams();
   // let [loading, setloading] = useState(false);
-  let [user, setUsers] = useState();
+  let [user, setUser] = useState();
   // let [Userposts, setUserposts] = useState([]);
 
   // const [selectedOption, setSelectedOption] = useState(user ? user.status === true ? "Active" : "Suspended" : 'Select..');
@@ -25,7 +25,7 @@ export function UserDetailpage() {
       return userObject._id === id;
     });
 
-    setUsers(CurrentUser);
+    setUser(CurrentUser);
   }, [id, storeUser]);
 
   // useEffect(() => {
@@ -62,7 +62,7 @@ export function UserDetailpage() {
   //         // // console.log(response.data.user);
   //         if (response && response.status === 200) {
   //             setloading(false)
-  //             setUsers(response.data.user)
+  //             setUser(response.data.user)
   //             toast.success(response.data.message)
   //         }
   //     } catch (error) {

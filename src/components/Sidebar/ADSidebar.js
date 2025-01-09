@@ -59,6 +59,27 @@ const Sidebar = () => {
               </Link>
             </NavItem>
 
+            <NavItem className="sidenav-bg">
+              <Link
+                to={"/Admin/AdminDashboard/Chats"}
+                className={
+                  location.pathname === "/Admin/AdminDashboard/"
+                    ? " text-primary bg-light fw-bold py-0 nav-linkcolor"
+                    : "nav-link text-secondary py-0 pb-3"
+                }
+              >
+                {/* <i className="bi bi-speedometer2"></i> */}
+                <img
+                  src={"/chats.png"}
+                  width={"20px"}
+                  height={"20px"}
+                  alt="img"
+                />
+
+                <span className="ms-3 d-inline-block">Chats</span>
+              </Link>
+            </NavItem>
+
             <NavItem>
               <strong> Home </strong>{" "}
             </NavItem>
