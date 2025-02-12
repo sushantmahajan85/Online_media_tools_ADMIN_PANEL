@@ -213,38 +213,50 @@ const ProjectTables = () => {
 
                       <td>
                         {tdata.firstName && !tdata.isSuspended && (
-                          <Button
-                            onClick={async () => {
+                          <a
+                            href="#"
+                            onClick={async (e) => {
+                              e.preventDefault(); // Prevent default anchor behavior
                               let response = await axios.put(
                                 `${serverURL}/api/users/suspend/${tdata._id}`
                               );
 
                               if (response && response.status === 200) {
-                                // setloading(false);
                                 toast.success(response.data.message);
                                 window.location.reload();
                               }
                             }}
+                            style={{
+                              color: "red",
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                            }}
                           >
-                            <i class="bi-exclamation-octagon-fill"></i>
-                          </Button>
+                            Suspend
+                          </a>
                         )}
                         {tdata.firstName && tdata.isSuspended && (
-                          <Button
-                            onClick={async () => {
+                          <a
+                            href="#"
+                            onClick={async (e) => {
+                              e.preventDefault(); // Prevent default anchor behavior
                               let response = await axios.put(
                                 `${serverURL}/api/users/unsuspend/${tdata._id}`
                               );
 
                               if (response && response.status === 200) {
-                                // setloading(false);
                                 toast.success(response.data.message);
                                 window.location.reload();
                               }
                             }}
+                            style={{
+                              color: "green",
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                            }}
                           >
-                            <i class="bi bi-check2-circle"></i>
-                          </Button>
+                            Banned
+                          </a>
                         )}
                       </td>
                     </tr>

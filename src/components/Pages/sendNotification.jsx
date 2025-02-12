@@ -8,10 +8,14 @@ const serverURL = process.env.REACT_APP_SERVER_URL;
 export function SendNotification() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [loading, setLoading] = useState(false); // Loader state
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // Start loader
+
     const formData = { title, body };
+
     try {
       let response = await axios.post(
         `${serverURL}/api/admin/sendManualNotification`,
@@ -24,8 +28,6 @@ export function SendNotification() {
         setBody("");
       }
     } catch (error) {
-      setTitle("");
-      setBody("");
       if (error && error.response) {
         if (error.response.status === 401) {
           toast.warning(error.response.data.message);
@@ -37,6 +39,8 @@ export function SendNotification() {
       } else {
         toast.error("Failed to send notification");
       }
+    } finally {
+      setLoading(false); // Stop loader
     }
   };
 
@@ -98,15 +102,17 @@ export function SendNotification() {
         </div>
         <button
           type="submit"
+          disabled={loading} // Disable button while loading
           style={{
             backgroundColor: "#007bff",
             color: "#fff",
             padding: "0.5rem 1rem",
             borderRadius: "4px",
             border: "none",
+            cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          Send
+          {loading ? "Sending..." : "Send"}
         </button>
       </form>
     </>

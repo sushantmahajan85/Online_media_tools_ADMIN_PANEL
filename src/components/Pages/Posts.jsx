@@ -268,14 +268,14 @@ export function Posts() {
                     </div>
                     <div className="row gap-2 p-1">
                       <div className="col d-flex align-items-center justify-content-center">
-                        {/* approve disapprove button */}
+                        {/* Approve/Disapprove Button */}
                         <button
                           onClick={async () => {
                             try {
                               setloading(true);
                               let response = await axios.post(
                                 `${serverURL}/api/posts/${post._id}/Approve_post`,
-                                { appproveStatus: post.isApproved }
+                                { appproveStatus: !post.isApproved } // Toggle approval status
                               );
 
                               if (response && response.status === 200) {
@@ -290,14 +290,10 @@ export function Posts() {
                               }
                             } catch (error) {
                               setloading(false);
-                              if (error) {
-                                if (error.response) {
-                                  // console.log(error.response.data);
-                                  // console.log(error.response.status);
-                                  toast.error(error.response.data.message);
-                                } else {
-                                  toast.error("Failed to Update Post Status");
-                                }
+                              if (error.response) {
+                                toast.error(error.response.data.message);
+                              } else {
+                                toast.error("Failed to Update Post Status");
                               }
                             }
                           }}
@@ -307,8 +303,7 @@ export function Posts() {
                               : style.buttonApprove
                           }
                         >
-                          {" "}
-                          {post.isApproved ? "Disapprove" : "Approve"}{" "}
+                          {post.isApproved ? "Disapprove" : "Approve"}
                         </button>
                       </div>
 
