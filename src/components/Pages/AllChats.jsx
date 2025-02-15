@@ -1,14 +1,7 @@
 import { Link } from "react-router-dom";
 import { db } from "../../firebase";
 import React, { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  query,
-  orderBy,
-  limit,
-  startAfter,
-} from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { useSelector } from "react-redux";
 import { selecteUsers } from "../../Store/authSlice";
 import style from "./ui.module.css";
@@ -18,66 +11,64 @@ export function AllChats() {
   const [filteredChats, setFilteredChats] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchMessage, setSearchMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastVisible, setLastVisible] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const StoreAllUsers = useSelector(selecteUsers);
 
-  // 🔹 Fetch Chat List from Firestore
-  const fetchChats = async (initial = false) => {
+  const fetchChats = async () => {
     setIsLoading(true);
     try {
-      const chatsQuery = initial
-        ? query(
-            collection(db, "chats"),
-            orderBy("timestamp", "desc"),
-            limit(100)
-          )
-        : query(
-            collection(db, "chats"),
-            orderBy("timestamp", "desc"),
-            startAfter(lastVisible),
-            limit(100)
-          );
-
+      const chatsQuery = query(
+        collection(db, "chats"),
+        orderBy("timestamp", "desc")
+      );
       const querySnapshot = await getDocs(chatsQuery);
 
       if (!querySnapshot.empty) {
-        const chatData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const chatData = await Promise.all(
+          querySnapshot.docs.map(async (doc) => {
+            const chat = { id: doc.id, ...doc.data() };
 
-        const processedChats = chatData.map((chat) => {
-          const sender = StoreAllUsers.find(
-            (user) => user._id === chat.senderId
-          );
-          const receiver = StoreAllUsers.find(
-            (user) => user._id === chat.receiverId
-          );
-          const date = chat.timestamp
-            ? new Date(chat.timestamp.seconds * 1000)
-            : null;
+            console.log("🔥 Raw Firestore Chat Document:", chat); // Debug log
 
-          return {
-            chatId: chat.id,
-            senderId: chat.senderId,
-            senderName: sender?.firstName || "Unknown Sender",
-            receiverId: chat.receiverId,
-            receiverName: receiver?.firstName || "Unknown Receiver",
-            timestamp: date,
-            lastMessage: chat.lastMessage || "",
-            chatLink: `/Admin/AdminDashboard/UserDetails/${chat.receiverId}/UserChats/${chat.id}/Chat`,
-          };
-        });
+            // Fetch all messages from the chat's messages subcollection
+            const messagesQuery = query(
+              collection(db, `chats/${chat.id}/messages`),
+              orderBy("timestamp", "desc")
+            );
+            const messagesSnapshot = await getDocs(messagesQuery);
+            const messages = messagesSnapshot.docs.map((msg) => ({
+              id: msg.id,
+              ...msg.data(),
+            }));
 
-        setChats((prevChats) =>
-          initial ? processedChats : [...prevChats, ...processedChats]
+            console.log(`📩 Messages for Chat ${chat.id}:`, messages); // Debug log
+
+            const sender = StoreAllUsers.find(
+              (user) => user._id === chat.senderId
+            );
+            const receiver = StoreAllUsers.find(
+              (user) => user._id === chat.receiverId
+            );
+            const date = chat.timestamp
+              ? new Date(chat.timestamp.seconds * 1000)
+              : null;
+
+            return {
+              chatId: chat.id,
+              senderId: chat.senderId,
+              senderName: sender?.firstName || "Unknown Sender",
+              receiverId: chat.receiverId,
+              receiverName: receiver?.firstName || "Unknown Receiver",
+              timestamp: date,
+              lastMessage: chat.lastMessage || "",
+              allMessages: messages, // Store all messages for search
+              chatLink: `/Admin/AdminDashboard/UserDetails/${chat.receiverId}/UserChats/${chat.id}/Chat`,
+            };
+          })
         );
-        setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
-        setHasMore(querySnapshot.docs.length === 100);
-      } else {
-        setHasMore(false);
+
+        setChats(chatData);
+        setFilteredChats(chatData); // Ensure initial state is set
       }
     } catch (error) {
       console.error("Error fetching chats:", error);
@@ -86,29 +77,48 @@ export function AllChats() {
   };
 
   useEffect(() => {
-    fetchChats(true);
+    fetchChats();
   }, []);
 
   // 🔹 Filter Chats Based on Search Input
   useEffect(() => {
     setIsLoading(true);
-    let filteredChats = chats;
+    console.log("🔎 Filtering chats...");
+    console.log("📌 Search Term:", searchTerm);
+    console.log("📌 Search Message:", searchMessage);
+    console.log("📌 Original Chats Before Filtering:", chats);
+
+    let filtered = [...chats]; // Ensure we don't mutate state
 
     if (searchTerm.trim()) {
-      filteredChats = filteredChats.filter(
-        (chat) =>
-          chat.senderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          chat.receiverName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter((chat) => {
+        const senderMatch = chat.senderName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const receiverMatch = chat.receiverName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase());
+
+        console.log(
+          `🔹 Checking chat: Sender=${chat.senderName}, Receiver=${
+            chat.receiverName
+          }, Match=${senderMatch || receiverMatch}`
+        );
+
+        return senderMatch || receiverMatch;
+      });
     }
 
     if (searchMessage.trim()) {
-      filteredChats = filteredChats.filter((chat) =>
-        chat.lastMessage.toLowerCase().includes(searchMessage.toLowerCase())
+      filtered = filtered.filter((chat) =>
+        chat.allMessages.some((msg) =>
+          msg.message?.toLowerCase().includes(searchMessage.toLowerCase())
+        )
       );
     }
 
-    setFilteredChats(filteredChats);
+    console.log("🔹 Filtered Chats After Search:", filtered);
+    setFilteredChats(filtered);
     setIsLoading(false);
   }, [searchTerm, searchMessage, chats]);
 
@@ -146,17 +156,17 @@ export function AllChats() {
       )}
 
       {/* 🔹 Display Filtered Chats */}
-      {filteredChats.length > 0 ? (
+      {!isLoading && filteredChats.length > 0 ? (
         <div className="my-2 p-2">
           <div className={style.containerContent}>
             {filteredChats.map((chat) => (
               <div key={chat.chatId} className={style.Content}>
                 <div className="row gap-2 p-2">
                   <div className="col text-center">
-                    {chat.senderName || "N/A"}
+                    {chat.receiverName || "N/A"}
                   </div>
                   <div className="col text-center">
-                    {chat.receiverName || "N/A"}
+                    {chat.senderName || "N/A"}
                   </div>
                   <div className="col text-center">
                     {chat.timestamp ? chat.timestamp.toLocaleString() : "N/A"}
@@ -171,14 +181,6 @@ export function AllChats() {
               </div>
             ))}
           </div>
-          {hasMore && (
-            <button
-              className="btn btn-primary mt-3"
-              onClick={() => fetchChats(false)}
-            >
-              Load More
-            </button>
-          )}
         </div>
       ) : (
         !isLoading && (
