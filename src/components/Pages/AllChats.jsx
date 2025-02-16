@@ -56,9 +56,9 @@ export function AllChats() {
             return {
               chatId: chat.id,
               senderId: chat.senderId,
-              senderName: sender?.firstName || "Unknown Sender",
+              senderName: sender?.firstName || "Loading Sender...",
               receiverId: chat.receiverId,
-              receiverName: receiver?.firstName || "Unknown Receiver",
+              receiverName: receiver?.firstName || "Loading Receiver...",
               timestamp: date,
               lastMessage: chat.lastMessage || "",
               allMessages: messages, // Store all messages for search
@@ -78,7 +78,7 @@ export function AllChats() {
 
   useEffect(() => {
     fetchChats();
-  }, []);
+  }, [StoreAllUsers]);
 
   // 🔹 Filter Chats Based on Search Input
   useEffect(() => {
@@ -163,10 +163,10 @@ export function AllChats() {
               <div key={chat.chatId} className={style.Content}>
                 <div className="row gap-2 p-2">
                   <div className="col text-center">
-                    {chat.receiverName || "N/A"}
+                    {chat.senderName || "N/A"}
                   </div>
                   <div className="col text-center">
-                    {chat.senderName || "N/A"}
+                    {chat.receiverName || "N/A"}
                   </div>
                   <div className="col text-center">
                     {chat.timestamp ? chat.timestamp.toLocaleString() : "N/A"}
