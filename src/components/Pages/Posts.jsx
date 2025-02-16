@@ -325,6 +325,7 @@ export function Posts() {
 
                               if (response && response.status === 200) {
                                 setloading(false);
+                                window.location.reload();
                                 toast.success(response.data.message);
                                 // console.log("response aya");
                                 // console.log(response.data.newBumperpost);
