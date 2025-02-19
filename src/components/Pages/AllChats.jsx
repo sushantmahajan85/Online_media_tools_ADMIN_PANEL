@@ -30,7 +30,7 @@ export function AllChats() {
 
             console.log("🔥 Raw Firestore Chat Document:", chat); // Debug log
 
-            // Fetch all messages from the chat's messages subcollection
+            // Fetch messages sorted by timestamp (latest first)
             const messagesQuery = query(
               collection(db, `chats/${chat.id}/messages`),
               orderBy("timestamp", "desc")
@@ -43,24 +43,29 @@ export function AllChats() {
 
             console.log(`📩 Messages for Chat ${chat.id}:`, messages); // Debug log
 
+            // Get the latest message
+            const lastMessage = messages.length > 0 ? messages[0] : null;
+
+            // Assign sender & receiver based on the last message
             const sender = StoreAllUsers.find(
-              (user) => user._id === chat.senderId
+              (user) => user._id === lastMessage?.senderId
             );
             const receiver = StoreAllUsers.find(
-              (user) => user._id === chat.receiverId
+              (user) => user._id === lastMessage?.receiverId
             );
+
             const date = chat.timestamp
               ? new Date(chat.timestamp.seconds * 1000)
               : null;
 
             return {
               chatId: chat.id,
-              senderId: chat.senderId,
-              senderName: sender?.firstName || "Loading Sender...",
-              receiverId: chat.receiverId,
-              receiverName: receiver?.firstName || "Loading Receiver...",
+              senderId: lastMessage?.senderId || "Unknown",
+              senderName: sender?.firstName || "Unknown Sender",
+              receiverId: lastMessage?.receiverId || "Unknown",
+              receiverName: receiver?.firstName || "Unknown Receiver",
               timestamp: date,
-              lastMessage: chat.lastMessage || "",
+              lastMessage: lastMessage?.message || "No messages yet",
               allMessages: messages, // Store all messages for search
               chatLink: `/Admin/AdminDashboard/UserDetails/${chat.receiverId}/UserChats/${chat.id}/Chat`,
             };
