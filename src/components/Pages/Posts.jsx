@@ -412,7 +412,7 @@ export function Posts() {
                             try {
                               setloading(true);
                               let response = await axios.post(
-                                `https://online-media-tools-server-vercel.onrender.com/api/posts/${post._id}/admin-Linkedin`
+                                `${serverURL}/api/posts/${post._id}/admin-Linkedin`
                               );
 
                               if (response && response.status === 200) {
