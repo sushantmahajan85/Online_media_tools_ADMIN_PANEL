@@ -1,14 +1,13 @@
-import { CardBody, Table, Button } from "reactstrap";
-import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import React from "react";
-import "react-dropdown/style.css";
-import style from "./ui.module.css";
-import { toast } from "react-toastify";
 import axios from "axios";
+import { useEffect, useState } from "react";
+import "react-dropdown/style.css";
 import { useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { Button, CardBody, Table } from "reactstrap";
 import { selecteUsers } from "../../Store/authSlice";
 import { DeleteModel } from "./DeleteModel";
+import style from "./ui.module.css";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 const ProjectTables = () => {
@@ -26,7 +25,7 @@ const ProjectTables = () => {
 
   useEffect(() => {
     let alluser = storeUsers.filter(
-      (user) => user._id !== "658c582ff1bc8978d2300823"
+      (user) => user._id !== "658c582ff1bc8978d2300823",
     );
     alluser = alluser.reverse();
     setcurrentData(alluser);
@@ -36,7 +35,7 @@ const ProjectTables = () => {
     const chatRoomUsers = ["658c582ff1bc8978d2300823", userId].sort();
     const chatRoomId = chatRoomUsers.join("_");
     navigate(
-      `/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats/${chatRoomId}/Chat`
+      `/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats/${chatRoomId}/Chat`,
     );
   }
 
@@ -93,7 +92,7 @@ const ProjectTables = () => {
                     onClick={() => {
                       setModal(!modal);
                       setpContent(
-                        " Are you sure you want to Delete All Unverified Users? This action cannot be undone."
+                        " Are you sure you want to Delete All Unverified Users? This action cannot be undone.",
                       );
                       setdeleteWhatUsers("UnverifiedUsers");
                     }}
@@ -196,7 +195,7 @@ const ProjectTables = () => {
                             setModal(!modal);
                             setdeleteWhatUsers("user");
                             setpContent(
-                              " Are you sure you want to Delete  your account? All of your data will be permanently removed. This action cannot be undone."
+                              " Are you sure you want to Delete  your account? All of your data will be permanently removed. This action cannot be undone.",
                             );
                           }}
                         >
@@ -213,12 +212,10 @@ const ProjectTables = () => {
 
                       <td>
                         {tdata.firstName && !tdata.isSuspended && (
-                          <a
-                            href="#"
-                            onClick={async (e) => {
-                              e.preventDefault(); // Prevent default anchor behavior
+                          <button
+                            onClick={async () => {
                               let response = await axios.put(
-                                `${serverURL}/api/users/suspend/${tdata._id}`
+                                `${serverURL}/api/users/suspend/${tdata._id}`,
                               );
 
                               if (response && response.status === 200) {
@@ -230,18 +227,19 @@ const ProjectTables = () => {
                               color: "red",
                               cursor: "pointer",
                               textDecoration: "underline",
+                              background: "none",
+                              border: "none",
+                              padding: 0,
                             }}
                           >
                             Suspend
-                          </a>
+                          </button>
                         )}
                         {tdata.firstName && tdata.isSuspended && (
-                          <a
-                            href="#"
-                            onClick={async (e) => {
-                              e.preventDefault(); // Prevent default anchor behavior
+                          <button
+                            onClick={async () => {
                               let response = await axios.put(
-                                `${serverURL}/api/users/unsuspend/${tdata._id}`
+                                `${serverURL}/api/users/unsuspend/${tdata._id}`,
                               );
 
                               if (response && response.status === 200) {
@@ -253,10 +251,13 @@ const ProjectTables = () => {
                               color: "green",
                               cursor: "pointer",
                               textDecoration: "underline",
+                              background: "none",
+                              border: "none",
+                              padding: 0,
                             }}
                           >
                             Banned
-                          </a>
+                          </button>
                         )}
                       </td>
                     </tr>

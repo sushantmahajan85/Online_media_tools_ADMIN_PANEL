@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { db } from "../../firebase";
-import React, { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { useSelector } from "react-redux";
 import { selecteUsers } from "../../Store/authSlice";
 import style from "./ui.module.css";
 
@@ -19,7 +20,7 @@ export function AllChats() {
     try {
       const chatsQuery = query(
         collection(db, "chats"),
-        orderBy("timestamp", "desc")
+        orderBy("timestamp", "desc"),
       );
       const querySnapshot = await getDocs(chatsQuery);
 
@@ -33,7 +34,7 @@ export function AllChats() {
             // Fetch messages sorted by timestamp (latest first)
             const messagesQuery = query(
               collection(db, `chats/${chat.id}/messages`),
-              orderBy("timestamp", "desc")
+              orderBy("timestamp", "desc"),
             );
             const messagesSnapshot = await getDocs(messagesQuery);
             const messages = messagesSnapshot.docs.map((msg) => ({
@@ -48,10 +49,10 @@ export function AllChats() {
 
             // Assign sender & receiver based on the last message
             const sender = StoreAllUsers.find(
-              (user) => user._id === lastMessage?.senderId
+              (user) => user._id === lastMessage?.senderId,
             );
             const receiver = StoreAllUsers.find(
-              (user) => user._id === lastMessage?.receiverId
+              (user) => user._id === lastMessage?.receiverId,
             );
 
             const date = chat.timestamp
@@ -69,7 +70,7 @@ export function AllChats() {
               allMessages: messages, // Store all messages for search
               chatLink: `/Admin/AdminDashboard/UserDetails/${chat.receiverId}/UserChats/${chat.id}/Chat`,
             };
-          })
+          }),
         );
 
         setChats(chatData);
@@ -107,7 +108,7 @@ export function AllChats() {
         console.log(
           `🔹 Checking chat: Sender=${chat.senderName}, Receiver=${
             chat.receiverName
-          }, Match=${senderMatch || receiverMatch}`
+          }, Match=${senderMatch || receiverMatch}`,
         );
 
         return senderMatch || receiverMatch;
@@ -117,8 +118,8 @@ export function AllChats() {
     if (searchMessage.trim()) {
       filtered = filtered.filter((chat) =>
         chat.allMessages.some((msg) =>
-          msg.message?.toLowerCase().includes(searchMessage.toLowerCase())
-        )
+          msg.message?.toLowerCase().includes(searchMessage.toLowerCase()),
+        ),
       );
     }
 
