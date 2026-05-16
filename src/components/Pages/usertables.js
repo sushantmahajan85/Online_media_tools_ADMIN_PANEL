@@ -1,94 +1,104 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "react-dropdown/style.css";
 import { useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Button, CardBody, Table } from "reactstrap";
+import { Button, CardBody, Input, Table } from "reactstrap";
 import { selecteUsers } from "../../Store/authSlice";
+import { displayText, formatJoiningDate } from "../../utils/userDisplay";
 import { DeleteModel } from "./DeleteModel";
 import style from "./ui.module.css";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
+
+const EXCLUDED_ADMIN_ID = "658c582ff1bc8978d2300823";
+
+function userDisplayName(tdata) {
+  if (tdata.firstName || tdata.lastName) {
+    return [tdata.firstName, tdata.lastName].filter(Boolean).join(" ").trim();
+  }
+  return "—";
+}
+
 const ProjectTables = () => {
   const storeUsers = useSelector(selecteUsers);
-  // console.log(storeUsers);
   const [deltedId, setDeletedId] = useState();
   const [deleteWhatUsers, setdeleteWhatUsers] = useState("");
   const [pContent, setpContent] = useState();
   const navigate = useNavigate();
-
   const [currentData, setcurrentData] = useState();
-  // const [selectedOption, setSelectedOption] = useState('Select..');
   const [modal, setModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const toggle = () => setModal(!modal);
 
   useEffect(() => {
-    let alluser = storeUsers.filter(
-      (user) => user._id !== "658c582ff1bc8978d2300823",
-    );
+    let alluser = storeUsers.filter((user) => user._id !== EXCLUDED_ADMIN_ID);
     alluser = alluser.reverse();
     setcurrentData(alluser);
   }, [storeUsers]);
 
+  const filteredData = useMemo(() => {
+    if (!currentData) return [];
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return currentData;
+    return currentData.filter((u) => {
+      const name = userDisplayName(u).toLowerCase();
+      const email = (u.email || "").toLowerCase();
+      const mobile = displayText(u.mobileNumber, "").toLowerCase();
+      const ip = displayText(u.ipAddress, "").toLowerCase();
+      const device = displayText(u.device, "").toLowerCase();
+      const id = (u._id || "").toLowerCase();
+      return (
+        name.includes(q) ||
+        email.includes(q) ||
+        mobile.includes(q) ||
+        ip.includes(q) ||
+        device.includes(q) ||
+        id.includes(q)
+      );
+    });
+  }, [currentData, searchQuery]);
+
   async function handleUserChat(userId) {
-    const chatRoomUsers = ["658c582ff1bc8978d2300823", userId].sort();
+    const chatRoomUsers = [EXCLUDED_ADMIN_ID, userId].sort();
     const chatRoomId = chatRoomUsers.join("_");
     navigate(
-      `/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats/${chatRoomId}/Chat`,
+      `/Admin/AdminDashboard/UserDetails/${EXCLUDED_ADMIN_ID}/UserChats/${chatRoomId}/Chat`,
     );
   }
 
-  // const handleDropdownChange = (e) => {
-  //   const selectedValue = e.target.value;
-  //   setSelectedOption(selectedValue);
-
-  //   if (selectedValue === 'Select..') {
-  //     toast.info("Please Select Any Options")
-  //     return
-  //   }
-
-  //   if (selectedValue === "Active") {
-  //     let Result = storeUsers.filter((userObject) => {
-  //       return userObject.status === true;
-  //     });
-  //     // console.log(Result);
-  //     setcurrentData(Result)
-  //   } else if (selectedValue === "Suspended") {
-  //     let Result = storeUsers.filter((userObject) => {
-  //       return userObject.status === false;
-  //     });
-
-  //     // console.log(Result);
-  //     setcurrentData(Result)
-  //   } else {
-  //     setcurrentData(storeUsers)
-
-  //   }
-  //   setSelectedOption('Select..')
-
-  // };
-
   return (
-    <div>
+    <div className={style.usersPageShell}>
       {currentData && (
         <div>
-          <div className={`p-2  text-light ${style.Sheading} `}>
+          <div className={`p-2 text-light ${style.Sheading}`}>
             <h2 className={style.Heading}>Users</h2>
           </div>
 
           <div>
-            <CardBody>
-              <div className="d-flex align-items-center justify-content-between  ">
-                <div>
-                  <h2 tag="h5"> User Listing</h2>
-                  <p className="text-muted" tag="h6">
-                    Overview of the All Users
+            <CardBody className={`px-0 px-sm-2 ${style.usersCardBody}`}>
+              <div className={style.usersCardHeader}>
+                <div className="me-2">
+                  <h2 className="h5 mb-1">User listing</h2>
+                  <p className="text-muted small mb-0">
+                    Overview of all users ({filteredData.length} shown)
                   </p>
                 </div>
 
-                <div>
+                <div className="d-flex flex-wrap align-items-stretch gap-2">
+                  <div className={style.usersSearch}>
+                    <Input
+                      type="search"
+                      bsSize="sm"
+                      placeholder="Search name, email, IP, device…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="border-secondary-subtle"
+                    />
+                  </div>
                   <button
+                    type="button"
                     onClick={() => {
                       setModal(!modal);
                       setpContent(
@@ -96,174 +106,240 @@ const ProjectTables = () => {
                       );
                       setdeleteWhatUsers("UnverifiedUsers");
                     }}
-                    className="bg-danger text-white p-2 fw-bold border-0 rounded "
+                    className="btn btn-danger btn-sm fw-semibold text-nowrap px-3"
                   >
-                    Delete All Unverified Users
+                    Delete unverified
                   </button>
                 </div>
               </div>
 
-              <div className={style.inputDivMain}>
-                {/* <div >
-              <label style={{ fontWeight: "bold", marginRight: "10px" }} htmlFor="userStatus">Select User Status:</label>
-              <select
-                className={style.dropdown}
-                id="userStatus"
-                name="userStatus"
-                value={selectedOption}
-
-                onChange={handleDropdownChange}
+              <div
+                className={style.usersTableViewport}
+                role="region"
+                aria-label="Users table"
+                tabIndex={0}
               >
-                <option value="Select..">Select..</option>
-                <option value="All">All</option>
-                <option value="Active">Active</option>
-                <option value="Suspended">Suspended</option>
-              </select>
-            </div> */}
-
-                {/* <form className={style.inputDiv}>
-              <input ref={searchInputRef} value={searchvalue} onChange={handelSearchinput} placeholder="Search User" className={style.SearchInput} type="search" name="" id="" />
-
-              <button type="submit" onClick={searchUsers} >
-
-                <svg xmlns="http://www.w3.org/2000/svg" width={"23px"} height={"23px"} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="black" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
-              </button>
-            </form> */}
-              </div>
-              <Table className="no-wrap  align-middle" responsive borderless>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Contact</th>
-                    <th>Designation</th>
-                    <th>Account</th>
-
-                    <th>Action</th>
-                    <th>Chat</th>
-                    <th>Suspend</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentData.map((tdata, index) => (
-                    <tr key={index} className="border-top">
-                      <td>
-                        <Link
-                          to={`/Admin/AdminDashboard/UserDetails/${tdata._id}`}
-                          className={`${style.userProfile} d-flex align-items-center text-dark pointer p-2`}
-                        >
-                          {tdata.profileImageUrl && (
-                            <img
-                              src={tdata.profileImageUrl}
-                              className="rounded-circle"
-                              alt="avatar"
-                              width="45"
-                              height="45"
-                            />
-                          )}
-                          <h6 className="mb-0 mx-2">
-                            {tdata.firstName
-                              ? tdata.firstName + " " + tdata.lastName
-                              : "NaN"}
-                          </h6>
-                        </Link>
-                      </td>
-                      <td>{tdata.email ? tdata.email : "NaN"}</td>
-                      <td>{tdata.mobileNumber ? tdata.mobileNumber : "NaN"}</td>
-                      <td>{tdata.Designation ? tdata.Designation : "NaN"}</td>
-                      <td>
-                        {tdata.isverified === true ? (
-                          <span className="text-success fw-bolder">
-                            Verified
-                          </span>
-                        ) : (
-                          <span className="text-danger fw-bolder ">
-                            Unverified
-                          </span>
-                        )}
-                      </td>
-                      {/* <td>
-                    {tdata.status === true ? <button className={style.active}>Active</button> : <button className={style.suspend}>Suspended</button>}
-                  </td> */}
-                      <td>
-                        <Button
-                          className="Reject"
-                          onClick={() => {
-                            setDeletedId(tdata._id);
-                            setModal(!modal);
-                            setdeleteWhatUsers("user");
-                            setpContent(
-                              " Are you sure you want to Delete  your account? All of your data will be permanently removed. This action cannot be undone.",
-                            );
-                          }}
-                        >
-                          <i className="bi bi-trash3"></i>
-                        </Button>
-                      </td>
-                      <td>
-                        {tdata.isverified && (
-                          <Button onClick={() => handleUserChat(tdata._id)}>
-                            <i class="bi bi-chat-left-fill"></i>
-                          </Button>
-                        )}
-                      </td>
-
-                      <td>
-                        {tdata.firstName && !tdata.isSuspended && (
-                          <button
-                            onClick={async () => {
-                              let response = await axios.put(
-                                `${serverURL}/api/users/suspend/${tdata._id}`,
-                              );
-
-                              if (response && response.status === 200) {
-                                toast.success(response.data.message);
-                                window.location.reload();
-                              }
-                            }}
-                            style={{
-                              color: "red",
-                              cursor: "pointer",
-                              textDecoration: "underline",
-                              background: "none",
-                              border: "none",
-                              padding: 0,
-                            }}
-                          >
-                            Suspend
-                          </button>
-                        )}
-                        {tdata.firstName && tdata.isSuspended && (
-                          <button
-                            onClick={async () => {
-                              let response = await axios.put(
-                                `${serverURL}/api/users/unsuspend/${tdata._id}`,
-                              );
-
-                              if (response && response.status === 200) {
-                                toast.success(response.data.message);
-                                window.location.reload();
-                              }
-                            }}
-                            style={{
-                              color: "green",
-                              cursor: "pointer",
-                              textDecoration: "underline",
-                              background: "none",
-                              border: "none",
-                              padding: 0,
-                            }}
-                          >
-                            Banned
-                          </button>
-                        )}
-                      </td>
+                <Table
+                  className={`align-middle mb-0 ${style.usersTable}`}
+                  borderless
+                  responsive={false}
+                >
+                  <colgroup>
+                    <col className={style.usersColName} />
+                    <col className={style.usersColEmail} />
+                    <col className={style.usersColContact} />
+                    <col className={style.usersColRole} />
+                    <col className={style.usersColAccount} />
+                    <col className={style.usersColIp} />
+                    <col className={style.usersColDevice} />
+                    <col className={style.usersColJoined} />
+                    <col className={style.usersColAction} />
+                    <col className={style.usersColChat} />
+                    <col className={style.usersColSuspend} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Contact</th>
+                      <th>Role</th>
+                      <th>Account</th>
+                      <th>IP</th>
+                      <th>Device</th>
+                      <th>Joined</th>
+                      <th className={style.usersActionCol}>Del</th>
+                      <th className={style.usersChatCol}>Chat</th>
+                      <th className={style.usersSuspendCol}>Suspend</th>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
+                  </thead>
+                  <tbody>
+                    {filteredData.map((tdata) => (
+                      <tr key={tdata._id} className="border-top">
+                        <td>
+                          <Link
+                            to={`/Admin/AdminDashboard/UserDetails/${tdata._id}`}
+                            className={`${style.userProfile} d-flex align-items-center text-dark text-decoration-none py-1 min-w-0 w-100`}
+                          >
+                            {tdata.profileImageUrl ? (
+                              <img
+                                src={tdata.profileImageUrl}
+                                className="rounded-circle flex-shrink-0"
+                                alt=""
+                                width={40}
+                                height={40}
+                              />
+                            ) : (
+                              <span
+                                className="rounded-circle flex-shrink-0 d-inline-flex align-items-center justify-content-center bg-light border text-secondary small"
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  fontSize: "0.7rem",
+                                }}
+                              >
+                                {(tdata.firstName || "?")[0]}
+                              </span>
+                            )}
+                            <span className="ms-2 mb-0 small fw-semibold flex-grow-1 min-w-0">
+                              <span
+                                className={style.usersCellEllipsis}
+                                title={userDisplayName(tdata)}
+                              >
+                                {userDisplayName(tdata)}
+                              </span>
+                            </span>
+                          </Link>
+                        </td>
+                        <td>
+                          <div className={style.usersCellInner}>
+                            <span
+                              className={style.usersCellEllipsis}
+                              title={displayText(tdata.email)}
+                            >
+                              {displayText(tdata.email)}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className={style.usersCellInner}>
+                            <span
+                              className={`small ${style.usersCellEllipsis}`}
+                              title={displayText(tdata.mobileNumber)}
+                            >
+                              {displayText(tdata.mobileNumber)}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className={style.usersCellInner}>
+                            <span
+                              className={`small ${style.usersCellClamp}`}
+                              title={displayText(tdata.Designation)}
+                            >
+                              {displayText(tdata.Designation)}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className={style.usersCellInner}>
+                            {tdata.isverified === true ? (
+                              <span className="text-success small fw-bold">
+                                OK
+                              </span>
+                            ) : (
+                              <span className="text-danger small fw-bold">
+                                No
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <div className={style.usersCellInner}>
+                            <span
+                              className={`small ${style.usersCellEllipsis}`}
+                              title={displayText(tdata.ipAddress)}
+                            >
+                              {displayText(tdata.ipAddress)}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className={style.usersCellInner}>
+                            <span
+                              className={`small ${style.usersCellClamp}`}
+                              title={displayText(tdata.device)}
+                            >
+                              {displayText(tdata.device)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="small text-muted">
+                          <div className={style.usersCellInner}>
+                            <span
+                              className={style.usersCellEllipsis}
+                              title={formatJoiningDate(tdata)}
+                            >
+                              {formatJoiningDate(tdata)}
+                            </span>
+                          </div>
+                        </td>
+                        <td
+                          className={`${style.usersActionCol} ${style.usersTableActions}`}
+                        >
+                          <Button
+                            className="Reject btn-sm p-1"
+                            onClick={() => {
+                              setDeletedId(tdata._id);
+                              setModal(!modal);
+                              setdeleteWhatUsers("user");
+                              setpContent(
+                                " Are you sure you want to Delete  your account? All of your data will be permanently removed. This action cannot be undone.",
+                              );
+                            }}
+                            aria-label="Delete user"
+                          >
+                            <i className="bi bi-trash3" />
+                          </Button>
+                        </td>
+                        <td
+                          className={`${style.usersChatCol} ${style.usersTableActions}`}
+                        >
+                          {tdata.isverified ? (
+                            <Button
+                              className="btn-sm p-1"
+                              onClick={() => handleUserChat(tdata._id)}
+                              aria-label="Open chat"
+                            >
+                              <i className="bi bi-chat-left-fill" />
+                            </Button>
+                          ) : (
+                            <span className="text-muted small">—</span>
+                          )}
+                        </td>
+                        <td
+                          className={`${style.usersSuspendCol} ${style.usersTableActions} small`}
+                        >
+                          {tdata.firstName && !tdata.isSuspended && (
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm text-danger p-0 text-decoration-underline"
+                              onClick={async () => {
+                                const response = await axios.put(
+                                  `${serverURL}/api/users/suspend/${tdata._id}`,
+                                );
+                                if (response && response.status === 200) {
+                                  toast.success(response.data.message);
+                                  window.location.reload();
+                                }
+                              }}
+                            >
+                              Suspend
+                            </button>
+                          )}
+                          {tdata.firstName && tdata.isSuspended && (
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm text-success p-0 text-decoration-underline"
+                              onClick={async () => {
+                                const response = await axios.put(
+                                  `${serverURL}/api/users/unsuspend/${tdata._id}`,
+                                );
+                                if (response && response.status === 200) {
+                                  toast.success(response.data.message);
+                                  window.location.reload();
+                                }
+                              }}
+                            >
+                              Banned
+                            </button>
+                          )}
+                          {!tdata.firstName && <span className="text-muted">—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
             </CardBody>
           </div>
         </div>

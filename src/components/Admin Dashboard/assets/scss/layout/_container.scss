@@ -3,6 +3,8 @@
 }
 .contentArea {
   flex-grow: 1;
+  min-width: 0;
+  overflow-x: hidden;
 }
 .wrapper {
   max-width: 1300px;

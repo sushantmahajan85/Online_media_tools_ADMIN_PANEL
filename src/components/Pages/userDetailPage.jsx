@@ -1,230 +1,176 @@
-// import axios from "axios";
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-// import { toast } from "react-toastify";
-import style from "./ui.module.css";
+import { Col, Row } from "reactstrap";
 import { useSelector } from "react-redux";
 import { selecteUsers } from "../../Store/authSlice";
-// import { Loader } from "../Loader/loader";
+import {
+  displayText,
+  formatJoiningDateTime,
+} from "../../utils/userDisplay";
+import style from "./ui.module.css";
 
-// const serverURL = process.env.REACT_APP_SERVER_URL
+function DetailField({ label, children }) {
+  return (
+    <div className={style.propRow}>
+      <div className={style.propLabel}>{label}</div>
+      <div className={style.propValue}>{children}</div>
+    </div>
+  );
+}
 
 export function UserDetailpage() {
   const storeUser = useSelector(selecteUsers);
-  // const storeAllPosts = useSelector(selectAllPosts)
   const { id } = useParams();
-  // let [loading, setloading] = useState(false);
-  let [user, setUser] = useState();
-  // let [Userposts, setUserposts] = useState([]);
-
-  // const [selectedOption, setSelectedOption] = useState(user ? user.status === true ? "Active" : "Suspended" : 'Select..');
+  const [user, setUser] = useState();
 
   useEffect(() => {
-    let CurrentUser = storeUser.find((userObject) => {
-      return userObject._id === id;
-    });
-
-    setUser(CurrentUser);
+    const current = storeUser.find((u) => u._id === id);
+    setUser(current);
   }, [id, storeUser]);
 
-  // useEffect(() => {
-  //     let CurrentUserPosts = storeAllPosts.filter((post) => {
-  //         return post.userId === id;
-  //     });
+  const fullName = useMemo(() => {
+    if (!user) return "";
+    const a = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+    return a || displayText(user.email, "User");
+  }, [user]);
 
-  //     setUserposts(CurrentUserPosts);
+  const initials = useMemo(() => {
+    if (!user) return "?";
+    const a = (user.firstName || "").trim();
+    const b = (user.lastName || "").trim();
+    if (a && b) return (a[0] + b[0]).toUpperCase();
+    if (a) return a.slice(0, 2).toUpperCase();
+    const e = (user.email || "").trim();
+    return e ? e[0].toUpperCase() : "?";
+  }, [user]);
 
-  // }, [storeAllPosts, id])
-
-  // // console.log(Userposts);
-  // const handleDropdownChange = (e) => {
-  //     const selectedValue = e.target.value;
-
-  //     setSelectedOption(selectedValue);
-
-  // };
-
-  // const handelSubmitStatus = async (e) => {
-  //     e.preventDefault()
-
-  //     if (selectedOption === 'Select..') {
-  //         toast.info("Please Select Any Options")
-  //         return
-  //     }
-
-  //     try {
-
-  //         setloading(true)
-  //         const response = await axios.post(`${serverURL}/api/users/${id}/update_user_status`, {
-  //             status: selectedOption
-  //         })
-  //         // // console.log(response.data.user);
-  //         if (response && response.status === 200) {
-  //             setloading(false)
-  //             setUser(response.data.user)
-  //             toast.success(response.data.message)
-  //         }
-  //     } catch (error) {
-  //         setloading(false)
-  //         if (error.response.status === 401) {
-  //             toast.error(error.response.message);
-  //         } else if (error.response.status === 400) {
-  //             toast.error(error.response.message);
-  //         } else if (error.response.status === 500) {
-  //             toast.error(error.response.message);
-
-  //         } else {
-  //             toast.error("Failed to Update user status")
-  //         }
-
-  //     }
-  //     setSelectedOption('Select..')
-
-  // }
   return (
     <>
-      <div className={`p-2  text-light ${style.Sheading} `}>
-        <h2 className={style.Heading}>User Profile</h2>
+      <div className={`p-2 text-light ${style.Sheading}`}>
+        <h2 className={style.Heading}>User profile</h2>
       </div>
 
       {user && (
-        <div>
-          <div className="p-3 ">
-            <div className={`${style.ProfileDIv} col-span-2`}>
-              <div
-                style={{ width: "100%" }}
-                className="d-flex   gap-2 justify-content-between px-4"
-              >
-                <div>
-                  <p>
-                    <span className="fw-bold">Name</span> :{" "}
-                    <span>{user.firstName + " " + user.lastName}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Mobile Number</span> :{" "}
-                    <span>{user.mobileNumber}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">UserId</span> :{" "}
-                    <span>{user._id}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Designation</span> :{" "}
-                    <span>{user.Designation}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">About </span> :{" "}
-                    <span>{user.AboutMe}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Facebook</span> :{" "}
-                    <span>{user.Facebook}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Instagram</span> :{" "}
-                    <span>{user.Instagram}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">LinkedIn</span> :{" "}
-                    <span>{user.LinkedIn}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Skype</span> :{" "}
-                    <span>{user.Skype}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Telegram</span> :{" "}
-                    <span>{user.Telegram}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">email</span> :{" "}
-                    <span>{user.email}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Account</span> :{" "}
-                    {user.isverified === true ? (
-                      <span className="text-success fw-bolder">Verified</span>
-                    ) : (
-                      <span className="text-danger fw-bolder ">Unverified</span>
-                    )}
-                  </p>
-                  {/* <p>
-                                <span className="fw-bold">Status</span> :  {user.status === true ? <span className={style.active}>Active</span> : <span className={style.suspend}>Suspended</span>}
-
-                            </p>
-                            <div >
-                                <span className="fw-bold">Change Status</span> :
-                                <form onSubmit={handelSubmitStatus} className={style.dropdownSelect} >
-                                    <select
-                                        className={style.dropdown}
-                                        id="userStatus"
-                                        name="userStatus"
-                                        value={selectedOption}
-
-                                        onChange={handleDropdownChange}
-                                    >
-
-                                        <option value="Select..">Select..</option>
-                                        <option value="Active">Active</option>
-                                        <option value="Suspended">Suspended</option>
-                                    </select>
-                                    <button style={{ marginLeft: "10px" }} type="submit">
-                                        Update
-                                    </button>
-                                </form>
-
-                            </div> */}
+        <div className={style.userDetailShell}>
+          <Row className="g-3 mb-3">
+            <Col lg={4} md={5}>
+              <div className={style.userDetailHeroCard}>
+                <div className={style.userDetailAvatar}>
+                  {user.profileImageUrl ? (
+                    <img src={user.profileImageUrl} alt="" />
+                  ) : (
+                    <div className={style.userDetailAvatarPlaceholder}>
+                      {initials}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <img
-                    src={user.profileImageUrl}
-                    alt="profileImage"
-                    width={"120rem"}
-                    height={"120rem"}
-                    style={{ borderRadius: "1rem" }}
-                  />
-                </div>
+                <div className={style.userDetailName}>{fullName}</div>
+                <p className={`${style.userDetailMeta} mb-1`}>
+                  {displayText(user.email)}
+                </p>
+                <p className={`${style.userDetailMeta} small font-monospace mb-0`}>
+                  {displayText(user._id)}
+                </p>
               </div>
-            </div>
-          </div>
+            </Col>
+            <Col lg={8} md={7}>
+              <Row className="g-3">
+                <Col md={6}>
+                  <div className={style.propertiesBox}>
+                    <div className={style.propertiesBoxTitle}>
+                      {"Account & access"}
+                    </div>
+                    <DetailField label="Verification">
+                      {user.isverified === true ? (
+                        <span className="text-success fw-semibold">
+                          Verified
+                        </span>
+                      ) : (
+                        <span className="text-danger fw-semibold">
+                          Unverified
+                        </span>
+                      )}
+                    </DetailField>
+                    <DetailField label="Email">
+                      {displayText(user.email)}
+                    </DetailField>
+                    <DetailField label="Mobile">
+                      {displayText(user.mobileNumber)}
+                    </DetailField>
+                    <DetailField label="IP address">
+                      {displayText(user.ipAddress)}
+                    </DetailField>
+                    <DetailField label="Device">
+                      {displayText(user.device)}
+                    </DetailField>
+                    <DetailField label="Joining date">
+                      {formatJoiningDateTime(user)}
+                    </DetailField>
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className={style.propertiesBox}>
+                    <div className={style.propertiesBoxTitle}>Profile</div>
+                    <DetailField label="Designation">
+                      {displayText(user.Designation)}
+                    </DetailField>
+                    <DetailField label="About">
+                      {displayText(user.AboutMe)}
+                    </DetailField>
+                  </div>
+                </Col>
+                <Col xs={12}>
+                  <div className={style.propertiesBox}>
+                    <div className={style.propertiesBoxTitle}>Social</div>
+                    <DetailField label="Facebook">
+                      {displayText(user.Facebook)}
+                    </DetailField>
+                    <DetailField label="Instagram">
+                      {displayText(user.Instagram)}
+                    </DetailField>
+                    <DetailField label="LinkedIn">
+                      {displayText(user.LinkedIn)}
+                    </DetailField>
+                    <DetailField label="Skype">
+                      {displayText(user.Skype)}
+                    </DetailField>
+                    <DetailField label="Telegram">
+                      {displayText(user.Telegram)}
+                    </DetailField>
+                  </div>
+                </Col>
+              </Row>
+            </Col>
+          </Row>
         </div>
       )}
 
-      <div className="container">
-        <div className="row gap-2  my-4 px-4 text-center">
-          <Link
-            to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats`}
-            className={`col ${style.Box}`}
-          >
-            <div>Chats</div>
-            <div>
-              <img
-                src="/chats.png"
-                alt="chatimg"
-                width={"30rem"}
-                height={"30rem"}
-              />
-            </div>
-          </Link>
-          <Link
-            to={`/Admin/AdminDashboard/UserDetails/${id}/Posts`}
-            className={`col ${style.Box}`}
-          >
-            <div>Posts</div>
-            <div>
-              <img
-                src="/mpost.png"
-                alt="chatimg"
-                width={"30rem"}
-                height={"30rem"}
-              />
-            </div>
-          </Link>
-        </div>
+      <div className={`container-fluid px-3 pb-4`}>
+        <Row className="g-3 my-2 justify-content-center text-center">
+          <Col xs={12} sm={6} md={4} lg={3}>
+            <Link
+              to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats`}
+              className={`${style.Box} h-100`}
+            >
+              <div>Chats</div>
+              <div>
+                <img src="/chats.png" alt="" width={36} height={36} />
+              </div>
+            </Link>
+          </Col>
+          <Col xs={12} sm={6} md={4} lg={3}>
+            <Link
+              to={`/Admin/AdminDashboard/UserDetails/${id}/Posts`}
+              className={`${style.Box} h-100`}
+            >
+              <div>Posts</div>
+              <div>
+                <img src="/mpost.png" alt="" width={36} height={36} />
+              </div>
+            </Link>
+          </Col>
+        </Row>
       </div>
-
-      {/* <Loader loading={loading} /> */}
     </>
   );
 }
