@@ -1133,7 +1133,7 @@
 
 .udpHeroCard {
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible;
   background: #fff;
   box-shadow: 0 4px 24px rgba(41, 98, 255, 0.1), 0 1px 4px rgba(0, 0, 0, 0.08);
   height: 100%;
@@ -1142,10 +1142,12 @@
 }
 
 .udpHeroCover {
-  height: 96px;
+  height: 110px;
   background: linear-gradient(135deg, #2962ff 0%, #3699ff 60%, #0bb7af 100%);
   flex-shrink: 0;
   position: relative;
+  border-radius: 16px 16px 0 0;
+  overflow: visible;
 }
 
 .udpHeroCover::after {
@@ -1156,7 +1158,7 @@
 }
 
 .udpHeroBody {
-  padding: 0 1.5rem 1.75rem;
+  padding: 56px 1.5rem 1.75rem;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -1172,8 +1174,10 @@
   box-shadow: 0 4px 18px rgba(41, 98, 255, 0.22);
   background: #eef5f9;
   overflow: hidden;
-  margin-top: -44px;
-  margin-bottom: 0.9rem;
+  position: absolute;
+  bottom: -44px;
+  left: 50%;
+  transform: translateX(-50%);
   flex-shrink: 0;
 }
 

@@ -61,24 +61,12 @@ export function UserDetailpage() {
 
   return (
     <div className={style.udpPage}>
-      <div className={style.udpPageHeader}>
-        <nav className={style.udpBreadcrumb} aria-label="breadcrumb">
-          <span>Dashboard</span>
-          <span className={style.udpBreadcrumbSep} aria-hidden="true">/</span>
-          <span>Users</span>
-          <span className={style.udpBreadcrumbSep} aria-hidden="true">/</span>
-          <span className={style.udpBreadcrumbActive}>Profile</span>
-        </nav>
-        <h1 className={style.udpPageTitle}>User Profile</h1>
-      </div>
-
       {user && (
         <div className={style.udpShell}>
           <Row className="g-4 mb-4">
             <Col lg={4} md={5} xs={12}>
               <div className={style.udpHeroCard}>
-                <div className={style.udpHeroCover} />
-                <div className={style.udpHeroBody}>
+                <div className={style.udpHeroCover}>
                   <div className={style.udpAvatarWrap}>
                     {user.profileImageUrl ? (
                       <img
@@ -90,7 +78,8 @@ export function UserDetailpage() {
                       <div className={style.udpAvatarInitials}>{initials}</div>
                     )}
                   </div>
-
+                </div>
+                <div className={style.udpHeroBody}>
                   <div
                     className={`${style.udpVerifyBadge} ${
                       user.isverified
@@ -119,10 +108,6 @@ export function UserDetailpage() {
                   <div className={style.udpHeroMeta}>
                     <span className="bi bi-envelope" />
                     <span>{displayText(user.email)}</span>
-                  </div>
-                  <div className={`${style.udpHeroMeta} ${style.udpHeroMetaId}`}>
-                    <span className="bi bi-fingerprint" />
-                    <span>{displayText(user._id)}</span>
                   </div>
                 </div>
               </div>
