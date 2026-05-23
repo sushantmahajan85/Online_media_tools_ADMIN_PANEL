@@ -1,229 +1,268 @@
-// import axios from "axios";
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-// import { toast } from "react-toastify";
 import style from "./ui.module.css";
 import { useSelector } from "react-redux";
 import { selecteUsers } from "../../Store/authSlice";
-// import { Loader } from "../Loader/loader";
 
-// const serverURL = process.env.REACT_APP_SERVER_URL
+const ADMIN_ID = "658c582ff1bc8978d2300823";
+
+const SOCIAL_LINKS = [
+  { key: "Facebook", icon: "bi bi-facebook", color: "#1877f2" },
+  { key: "Instagram", icon: "bi bi-instagram", color: "#e1306c" },
+  { key: "LinkedIn", icon: "bi bi-linkedin", color: "#0077b5" },
+  { key: "Skype", icon: "bi bi-skype", color: "#00aff0" },
+  { key: "Telegram", icon: "bi bi-telegram", color: "#2ca5e0" },
+];
 
 export function AdminDetailpage() {
   const storeUser = useSelector(selecteUsers);
-  // const storeAllPosts = useSelector(selectAllPosts)
-  // let [loading, setloading] = useState(false);
-  let [user, setUsers] = useState();
-  // let [Userposts, setUserposts] = useState([]);
-
-  // const [selectedOption, setSelectedOption] = useState(user ? user.status === true ? "Active" : "Suspended" : 'Select..');
+  const [user, setUsers] = useState(null);
 
   useEffect(() => {
-    let CurrentUser = storeUser.find((userObject) => {
-      return userObject._id === "658c582ff1bc8978d2300823";
-    });
-
-    setUsers(CurrentUser);
+    const found = storeUser.find((u) => u._id === ADMIN_ID);
+    setUsers(found || null);
   }, [storeUser]);
 
-  // useEffect(() => {
-  //     let CurrentUserPosts = storeAllPosts.filter((post) => {
-  //         return post.userId === id;
-  //     });
+  if (!user) {
+    return (
+      <div className={style.adpPage}>
+        <div className={style.adpCover}>
+          <div className={style.adpCoverOverlay} />
+        </div>
+        <div style={{ padding: "40px 32px", color: "#6b7280", textAlign: "center" }}>
+          Loading profile…
+        </div>
+      </div>
+    );
+  }
 
-  //     setUserposts(CurrentUserPosts);
+  const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+  const initials = fullName
+    ? fullName.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()
+    : "A";
 
-  // }, [storeAllPosts, id])
+  const activeSocials = SOCIAL_LINKS.filter((s) => user[s.key]);
 
-  // // console.log(Userposts);
-  // const handleDropdownChange = (e) => {
-  //     const selectedValue = e.target.value;
-
-  //     setSelectedOption(selectedValue);
-
-  // };
-
-  // const handelSubmitStatus = async (e) => {
-  //     e.preventDefault()
-
-  //     if (selectedOption === 'Select..') {
-  //         toast.info("Please Select Any Options")
-  //         return
-  //     }
-
-  //     try {
-
-  //         setloading(true)
-  //         const response = await axios.post(`${serverURL}/api/users/658c582ff1bc8978d2300823/update_user_status`, {
-  //             status: selectedOption
-  //         })
-  //         // // console.log(response.data.user);
-  //         if (response && response.status === 200) {
-  //             setloading(false)
-  //             setUsers(response.data.user)
-  //             toast.success(response.data.message)
-  //         }
-  //     } catch (error) {
-  //         setloading(false)
-  //         if (error.response.status === 401) {
-  //             toast.error(error.response.message);
-  //         } else if (error.response.status === 400) {
-  //             toast.error(error.response.message);
-  //         } else if (error.response.status === 500) {
-  //             toast.error(error.response.message);
-
-  //         } else {
-  //             toast.error("Failed to Update user status")
-  //         }
-
-  //     }
-  //     setSelectedOption('Select..')
-
-  // }
   return (
-    <>
-      <div className={`p-2  text-light ${style.Sheading} `}>
-        <h2 className={style.Heading}>User Profile</h2>
+    <div className={style.adpPage}>
+      {/* Cover */}
+      <div className={style.adpCover}>
+        <div className={style.adpCoverOverlay} />
       </div>
 
-      {user && (
-        <div>
-          <div className="p-3 ">
-            <div className={`${style.ProfileDIv} col-span-2`}>
-              <div
-                style={{ width: "100%" }}
-                className="d-flex   gap-2 justify-content-between px-4"
-              >
-                <div>
-                  <p>
-                    <span className="fw-bold">Name</span> :{" "}
-                    <span>{user.firstName + " " + user.lastName}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Mobile Number</span> :{" "}
-                    <span>{user.mobileNumber}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">UserId</span> :{" "}
-                    <span>{user._id}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Designation</span> :{" "}
-                    <span>{user.Designation}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">About </span> :{" "}
-                    <span>{user.AboutMe}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Facebook</span> :{" "}
-                    <span>{user.Facebook}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Instagram</span> :{" "}
-                    <span>{user.Instagram}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">LinkedIn</span> :{" "}
-                    <span>{user.LinkedIn}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Skype</span> :{" "}
-                    <span>{user.Skype}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Telegram</span> :{" "}
-                    <span>{user.Telegram}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">email</span> :{" "}
-                    <span>{user.email}</span>
-                  </p>
-                  <p>
-                    <span className="fw-bold">Account</span> :{" "}
-                    {user.isverified === true ? (
-                      <span className="text-success fw-bolder">Verified</span>
-                    ) : (
-                      <span className="text-danger fw-bolder ">Unverified</span>
-                    )}
-                  </p>
-                  {/* <p>
-                                <span className="fw-bold">Status</span> :  {user.status === true ? <span className={style.active}>Active</span> : <span className={style.suspend}>Suspended</span>}
+      {/* Avatar + Actions row */}
+      <div className={style.adpProfileRow}>
+        <div className={style.adpAvatarWrap}>
+          {user.profileImageUrl ? (
+            <img
+              src={user.profileImageUrl}
+              alt="profile"
+              className={style.adpAvatar}
+            />
+          ) : (
+            <div className={style.adpAvatarFallback}>{initials}</div>
+          )}
+          <div
+            className={
+              user.isverified ? style.adpVerifiedBadge : style.adpUnverifiedBadge
+            }
+          >
+            <i className={user.isverified ? "bi bi-check" : "bi bi-exclamation"} />
+          </div>
+        </div>
 
-                            </p>
-                            <div >
-                                <span className="fw-bold">Change Status</span> :
-                                <form onSubmit={handelSubmitStatus} className={style.dropdownSelect} >
-                                    <select
-                                        className={style.dropdown}
-                                        id="userStatus"
-                                        name="userStatus"
-                                        value={selectedOption}
+        <div className={style.adpProfileActions}>
+          <Link
+            to={`/Admin/AdminDashboard/UserDetails/${ADMIN_ID}/UserChats`}
+            className={`${style.adpActionBtn} ${style.adpActionBtnPrimary}`}
+          >
+            <i className="bi bi-chat-dots" />
+            Chats
+          </Link>
+          <Link
+            to={`/Admin/AdminDashboard/UserDetails/${ADMIN_ID}/Posts`}
+            className={`${style.adpActionBtn} ${style.adpActionBtnSecondary}`}
+          >
+            <i className="bi bi-grid" />
+            Posts
+          </Link>
+        </div>
+      </div>
 
-                                        onChange={handleDropdownChange}
-                                    >
+      {/* Name + Designation */}
+      <div className={style.adpNameBlock}>
+        <div className={style.adpName}>{fullName || "Unknown Admin"}</div>
+        {user.Designation && (
+          <div className={style.adpDesignation}>
+            <i className="bi bi-briefcase" />
+            {user.Designation}
+          </div>
+        )}
+        {user.AboutMe && (
+          <p className={style.adpAbout}>{user.AboutMe}</p>
+        )}
+      </div>
 
-                                        <option value="Select..">Select..</option>
-                                        <option value="Active">Active</option>
-                                        <option value="Suspended">Suspended</option>
-                                    </select>
-                                    <button style={{ marginLeft: "10px" }} type="submit">
-                                        Update
-                                    </button>
-                                </form>
+      {/* Info Grid */}
+      <div className={style.adpGrid}>
 
-                            </div> */}
-                </div>
-                <div>
-                  <img
-                    src={user.profileImageUrl}
-                    alt="profileImage"
-                    width={"120rem"}
-                    height={"120rem"}
-                    style={{ borderRadius: "1rem" }}
-                  />
-                </div>
+        {/* Contact Info */}
+        <div className={style.adpCard}>
+          <div className={style.adpCardTitle}>
+            <i className="bi bi-person-lines-fill" />
+            Contact Information
+          </div>
+
+          {user.email && (
+            <div className={style.adpInfoRow}>
+              <div className={style.adpInfoIcon}>
+                <i className="bi bi-envelope" />
+              </div>
+              <div>
+                <div className={style.adpInfoLabel}>Email</div>
+                <div className={style.adpInfoValue}>{user.email}</div>
+              </div>
+            </div>
+          )}
+
+          {user.mobileNumber && (
+            <div className={style.adpInfoRow}>
+              <div className={style.adpInfoIcon}>
+                <i className="bi bi-phone" />
+              </div>
+              <div>
+                <div className={style.adpInfoLabel}>Mobile</div>
+                <div className={style.adpInfoValue}>{user.mobileNumber}</div>
+              </div>
+            </div>
+          )}
+
+          <div className={style.adpInfoRow}>
+            <div className={style.adpInfoIcon}>
+              <i className="bi bi-shield-check" />
+            </div>
+            <div>
+              <div className={style.adpInfoLabel}>Account Status</div>
+              <div>
+                {user.isverified ? (
+                  <span className={style.adpStatusVerified}>
+                    <i className="bi bi-check-circle-fill" />
+                    Verified
+                  </span>
+                ) : (
+                  <span className={style.adpStatusUnverified}>
+                    <i className="bi bi-exclamation-circle-fill" />
+                    Unverified
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </div>
-      )}
 
-      <div className="container">
-        <div className="row gap-2  my-4 px-4 text-center">
-          <Link
-            to={`/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/UserChats`}
-            className={`col ${style.Box}`}
-          >
-            <div>Chats</div>
-            <div>
-              <img
-                src="/chats.png"
-                alt="chatimg"
-                width={"30rem"}
-                height={"30rem"}
-              />
+        {/* Account Details */}
+        <div className={style.adpCard}>
+          <div className={style.adpCardTitle}>
+            <i className="bi bi-fingerprint" />
+            Account Details
+          </div>
+
+          <div className={style.adpInfoRow}>
+            <div className={style.adpInfoIcon}>
+              <i className="bi bi-hash" />
             </div>
-          </Link>
-          <Link
-            to={`/Admin/AdminDashboard/UserDetails/658c582ff1bc8978d2300823/Posts`}
-            className={`col ${style.Box}`}
-          >
-            <div>Posts</div>
             <div>
-              <img
-                src="/mpost.png"
-                alt="chatimg"
-                width={"30rem"}
-                height={"30rem"}
-              />
+              <div className={style.adpInfoLabel}>User ID</div>
+              <div className={style.adpIdBadge}>{user._id}</div>
             </div>
-          </Link>
+          </div>
+
+          {user.Designation && (
+            <div className={style.adpInfoRow}>
+              <div className={style.adpInfoIcon}>
+                <i className="bi bi-briefcase" />
+              </div>
+              <div>
+                <div className={style.adpInfoLabel}>Designation</div>
+                <div className={style.adpInfoValue}>{user.Designation}</div>
+              </div>
+            </div>
+          )}
+
+          <div className={style.adpInfoRow}>
+            <div className={style.adpInfoIcon}>
+              <i className="bi bi-person-badge" />
+            </div>
+            <div>
+              <div className={style.adpInfoLabel}>Role</div>
+              <div className={style.adpInfoValue}>Administrator</div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* <Loader loading={loading} /> */}
-    </>
+        {/* Social Links */}
+        {activeSocials.length > 0 && (
+          <div className={style.adpCard}>
+            <div className={style.adpCardTitle}>
+              <i className="bi bi-share" />
+              Social Links
+            </div>
+            <div className={style.adpSocialGrid}>
+              {activeSocials.map(({ key, icon, color }) => (
+                <a
+                  key={key}
+                  href={user[key]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={style.adpSocialItem}
+                >
+                  <i className={`${icon} ${style.adpSocialIcon}`} style={{ color }} />
+                  {key}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div className={style.adpCard}>
+          <div className={style.adpCardTitle}>
+            <i className="bi bi-lightning" />
+            Quick Access
+          </div>
+          <div className={style.adpQuickGrid}>
+            <Link
+              to={`/Admin/AdminDashboard/UserDetails/${ADMIN_ID}/UserChats`}
+              className={style.adpQuickCard}
+            >
+              <div className={`${style.adpQuickIcon} ${style.adpQuickIconBlue}`}>
+                <i className="bi bi-chat-dots-fill" />
+              </div>
+              <div>
+                <div>Chats</div>
+                <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginTop: 2 }}>
+                  View all chats
+                </div>
+              </div>
+            </Link>
+            <Link
+              to={`/Admin/AdminDashboard/UserDetails/${ADMIN_ID}/Posts`}
+              className={style.adpQuickCard}
+            >
+              <div className={`${style.adpQuickIcon} ${style.adpQuickIconPurple}`}>
+                <i className="bi bi-grid-3x3-gap-fill" />
+              </div>
+              <div>
+                <div>Posts</div>
+                <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginTop: 2 }}>
+                  View all posts
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+      </div>
+    </div>
   );
 }

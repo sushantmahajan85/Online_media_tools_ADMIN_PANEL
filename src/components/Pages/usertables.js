@@ -70,278 +70,240 @@ const ProjectTables = () => {
 
   return (
     <div className={style.usersPageShell}>
+      {/* Toolbar */}
+      <div className={style.usersToolbar}>
+        <div className={style.usersToolbarLeft}>
+          <div className={style.usersSearchWrap}>
+            <i className={`bi bi-search ${style.usersSearchIcon}`} />
+            <input
+              type="search"
+              placeholder="Search name, email, IP, device…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={style.usersSearchInput}
+            />
+            {searchQuery && (
+              <button className={style.usersSearchClear} onClick={() => setSearchQuery("")} type="button">
+                <i className="bi bi-x" />
+              </button>
+            )}
+          </div>
+          <span className={style.usersCount}>
+            {filteredData.length} user{filteredData.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          className={style.usersDeleteUnverifiedBtn}
+          onClick={() => {
+            setModal(!modal);
+            setpContent("Are you sure you want to delete all unverified users? This action cannot be undone.");
+            setdeleteWhatUsers("UnverifiedUsers");
+          }}
+        >
+          <i className="bi bi-person-x-fill" />
+          Delete Unverified
+        </button>
+      </div>
+
+      {/* Table */}
       {currentData && (
-        <div>
-          <div className={`p-2 text-light ${style.Sheading}`}>
-            <h2 className={style.Heading}>Users</h2>
-          </div>
+        <div
+          className={style.usersTableViewport}
+          role="region"
+          aria-label="Users table"
+          tabIndex={0}
+        >
+          <Table
+            className={`align-middle mb-0 ${style.usersTable}`}
+            borderless
+            responsive={false}
+          >
+            <colgroup>
+              <col className={style.usersColName} />
+              <col className={style.usersColEmail} />
+              <col className={style.usersColContact} />
+              <col className={style.usersColRole} />
+              <col className={style.usersColAccount} />
+              <col className={style.usersColIp} />
+              <col className={style.usersColDevice} />
+              <col className={style.usersColJoined} />
+              <col className={style.usersColAction} />
+              <col className={style.usersColChat} />
+              <col className={style.usersColSuspend} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Contact</th>
+                <th>Role</th>
+                <th>Account</th>
+                <th>IP</th>
+                <th>Device</th>
+                <th>Joined</th>
+                <th className={style.usersActionCol}>Del</th>
+                <th className={style.usersChatCol}>Chat</th>
+                <th className={style.usersSuspendCol}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredData.map((tdata) => (
+                <tr key={tdata._id} className={style.usersRow}>
+                  {/* Name */}
+                  <td>
+                    <Link
+                      to={`/Admin/AdminDashboard/UserDetails/${tdata._id}`}
+                      className={style.usersNameCell}
+                    >
+                      {tdata.profileImageUrl ? (
+                        <img
+                          src={tdata.profileImageUrl}
+                          className={style.usersAvatar}
+                          alt=""
+                          width={36}
+                          height={36}
+                        />
+                      ) : (
+                        <span className={style.usersAvatarFallback}>
+                          {(tdata.firstName || "?")[0].toUpperCase()}
+                        </span>
+                      )}
+                      <span className={`${style.usersCellEllipsis} ${style.usersNameText}`} title={userDisplayName(tdata)}>
+                        {userDisplayName(tdata)}
+                      </span>
+                    </Link>
+                  </td>
 
-          <div>
-            <CardBody className={`px-0 px-sm-2 ${style.usersCardBody}`}>
-              <div className={style.usersCardHeader}>
-                <div className="me-2">
-                  <h2 className="h5 mb-1">User listing</h2>
-                  <p className="text-muted small mb-0">
-                    Overview of all users ({filteredData.length} shown)
-                  </p>
-                </div>
+                  {/* Email */}
+                  <td>
+                    <div className={style.usersCellInner}>
+                      <span className={`${style.usersCellEllipsis} ${style.usersCellText}`} title={displayText(tdata.email)}>
+                        {displayText(tdata.email)}
+                      </span>
+                    </div>
+                  </td>
 
-                <div className="d-flex flex-wrap align-items-stretch gap-2">
-                  <div className={style.usersSearch}>
-                    <Input
-                      type="search"
-                      bsSize="sm"
-                      placeholder="Search name, email, IP, device…"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="border-secondary-subtle"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setModal(!modal);
-                      setpContent(
-                        " Are you sure you want to Delete All Unverified Users? This action cannot be undone.",
-                      );
-                      setdeleteWhatUsers("UnverifiedUsers");
-                    }}
-                    className="btn btn-danger btn-sm fw-semibold text-nowrap px-3"
-                  >
-                    Delete unverified
-                  </button>
-                </div>
-              </div>
+                  {/* Contact */}
+                  <td>
+                    <div className={style.usersCellInner}>
+                      <span className={`${style.usersCellEllipsis} ${style.usersCellText}`} title={displayText(tdata.mobileNumber)}>
+                        {displayText(tdata.mobileNumber)}
+                      </span>
+                    </div>
+                  </td>
 
-              <div
-                className={style.usersTableViewport}
-                role="region"
-                aria-label="Users table"
-                tabIndex={0}
-              >
-                <Table
-                  className={`align-middle mb-0 ${style.usersTable}`}
-                  borderless
-                  responsive={false}
-                >
-                  <colgroup>
-                    <col className={style.usersColName} />
-                    <col className={style.usersColEmail} />
-                    <col className={style.usersColContact} />
-                    <col className={style.usersColRole} />
-                    <col className={style.usersColAccount} />
-                    <col className={style.usersColIp} />
-                    <col className={style.usersColDevice} />
-                    <col className={style.usersColJoined} />
-                    <col className={style.usersColAction} />
-                    <col className={style.usersColChat} />
-                    <col className={style.usersColSuspend} />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Contact</th>
-                      <th>Role</th>
-                      <th>Account</th>
-                      <th>IP</th>
-                      <th>Device</th>
-                      <th>Joined</th>
-                      <th className={style.usersActionCol}>Del</th>
-                      <th className={style.usersChatCol}>Chat</th>
-                      <th className={style.usersSuspendCol}>Suspend</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredData.map((tdata) => (
-                      <tr key={tdata._id} className="border-top">
-                        <td>
-                          <Link
-                            to={`/Admin/AdminDashboard/UserDetails/${tdata._id}`}
-                            className={`${style.userProfile} d-flex align-items-center text-dark text-decoration-none py-1 min-w-0 w-100`}
-                          >
-                            {tdata.profileImageUrl ? (
-                              <img
-                                src={tdata.profileImageUrl}
-                                className="rounded-circle flex-shrink-0"
-                                alt=""
-                                width={40}
-                                height={40}
-                              />
-                            ) : (
-                              <span
-                                className="rounded-circle flex-shrink-0 d-inline-flex align-items-center justify-content-center bg-light border text-secondary small"
-                                style={{
-                                  width: 40,
-                                  height: 40,
-                                  fontSize: "0.7rem",
-                                }}
-                              >
-                                {(tdata.firstName || "?")[0]}
-                              </span>
-                            )}
-                            <span className="ms-2 mb-0 small fw-semibold flex-grow-1 min-w-0">
-                              <span
-                                className={style.usersCellEllipsis}
-                                title={userDisplayName(tdata)}
-                              >
-                                {userDisplayName(tdata)}
-                              </span>
-                            </span>
-                          </Link>
-                        </td>
-                        <td>
-                          <div className={style.usersCellInner}>
-                            <span
-                              className={style.usersCellEllipsis}
-                              title={displayText(tdata.email)}
-                            >
-                              {displayText(tdata.email)}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <div className={style.usersCellInner}>
-                            <span
-                              className={`small ${style.usersCellEllipsis}`}
-                              title={displayText(tdata.mobileNumber)}
-                            >
-                              {displayText(tdata.mobileNumber)}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <div className={style.usersCellInner}>
-                            <span
-                              className={`small ${style.usersCellClamp}`}
-                              title={displayText(tdata.Designation)}
-                            >
-                              {displayText(tdata.Designation)}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <div className={style.usersCellInner}>
-                            {tdata.isverified === true ? (
-                              <span className="text-success small fw-bold">
-                                OK
-                              </span>
-                            ) : (
-                              <span className="text-danger small fw-bold">
-                                No
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          <div className={style.usersCellInner}>
-                            <span
-                              className={`small ${style.usersCellEllipsis}`}
-                              title={displayText(tdata.ipAddress)}
-                            >
-                              {displayText(tdata.ipAddress)}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <div className={style.usersCellInner}>
-                            <span
-                              className={`small ${style.usersCellClamp}`}
-                              title={displayText(tdata.device)}
-                            >
-                              {displayText(tdata.device)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="small text-muted">
-                          <div className={style.usersCellInner}>
-                            <span
-                              className={style.usersCellEllipsis}
-                              title={formatJoiningDate(tdata)}
-                            >
-                              {formatJoiningDate(tdata)}
-                            </span>
-                          </div>
-                        </td>
-                        <td
-                          className={`${style.usersActionCol} ${style.usersTableActions}`}
-                        >
-                          <Button
-                            className="Reject btn-sm p-1"
-                            onClick={() => {
-                              setDeletedId(tdata._id);
-                              setModal(!modal);
-                              setdeleteWhatUsers("user");
-                              setpContent(
-                                " Are you sure you want to Delete  your account? All of your data will be permanently removed. This action cannot be undone.",
-                              );
-                            }}
-                            aria-label="Delete user"
-                          >
-                            <i className="bi bi-trash3" />
-                          </Button>
-                        </td>
-                        <td
-                          className={`${style.usersChatCol} ${style.usersTableActions}`}
-                        >
-                          {tdata.isverified ? (
-                            <Button
-                              className="btn-sm p-1"
-                              onClick={() => handleUserChat(tdata._id)}
-                              aria-label="Open chat"
-                            >
-                              <i className="bi bi-chat-left-fill" />
-                            </Button>
-                          ) : (
-                            <span className="text-muted small">—</span>
-                          )}
-                        </td>
-                        <td
-                          className={`${style.usersSuspendCol} ${style.usersTableActions} small`}
-                        >
-                          {tdata.firstName && !tdata.isSuspended && (
-                            <button
-                              type="button"
-                              className="btn btn-link btn-sm text-danger p-0 text-decoration-underline"
-                              onClick={async () => {
-                                const response = await axios.put(
-                                  `${serverURL}/api/users/suspend/${tdata._id}`,
-                                );
-                                if (response && response.status === 200) {
-                                  toast.success(response.data.message);
-                                  window.location.reload();
-                                }
-                              }}
-                            >
-                              Suspend
-                            </button>
-                          )}
-                          {tdata.firstName && tdata.isSuspended && (
-                            <button
-                              type="button"
-                              className="btn btn-link btn-sm text-success p-0 text-decoration-underline"
-                              onClick={async () => {
-                                const response = await axios.put(
-                                  `${serverURL}/api/users/unsuspend/${tdata._id}`,
-                                );
-                                if (response && response.status === 200) {
-                                  toast.success(response.data.message);
-                                  window.location.reload();
-                                }
-                              }}
-                            >
-                              Banned
-                            </button>
-                          )}
-                          {!tdata.firstName && <span className="text-muted">—</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-            </CardBody>
-          </div>
+                  {/* Role */}
+                  <td>
+                    <div className={style.usersCellInner}>
+                      <span className={`${style.usersCellClamp} ${style.usersCellText}`} title={displayText(tdata.Designation)}>
+                        {displayText(tdata.Designation)}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Account */}
+                  <td>
+                    {tdata.isverified ? (
+                      <span className={style.usersVerifiedBadge}>Verified</span>
+                    ) : (
+                      <span className={style.usersUnverifiedBadge}>Unverified</span>
+                    )}
+                  </td>
+
+                  {/* IP */}
+                  <td>
+                    <div className={style.usersCellInner}>
+                      <span className={`${style.usersCellEllipsis} ${style.usersCellText}`} title={displayText(tdata.ipAddress)}>
+                        {displayText(tdata.ipAddress)}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Device */}
+                  <td>
+                    <div className={style.usersCellInner}>
+                      <span className={`${style.usersCellClamp} ${style.usersCellText}`} title={displayText(tdata.device)}>
+                        {displayText(tdata.device)}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Joined */}
+                  <td>
+                    <div className={style.usersCellInner}>
+                      <span className={`${style.usersCellEllipsis} ${style.usersCellText}`} title={formatJoiningDate(tdata)}>
+                        {formatJoiningDate(tdata)}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Delete */}
+                  <td className={`${style.usersActionCol} ${style.usersTableActions}`}>
+                    <button
+                      type="button"
+                      className={style.usersIconBtnDelete}
+                      aria-label="Delete user"
+                      onClick={() => {
+                        setDeletedId(tdata._id);
+                        setModal(!modal);
+                        setdeleteWhatUsers("user");
+                        setpContent("Are you sure you want to delete this user? All data will be permanently removed.");
+                      }}
+                    >
+                      <i className="bi bi-trash3" />
+                    </button>
+                  </td>
+
+                  {/* Chat */}
+                  <td className={`${style.usersChatCol} ${style.usersTableActions}`}>
+                    {tdata.isverified ? (
+                      <button
+                        type="button"
+                        className={style.usersIconBtnChat}
+                        aria-label="Open chat"
+                        onClick={() => handleUserChat(tdata._id)}
+                      >
+                        <i className="bi bi-chat-dots-fill" />
+                      </button>
+                    ) : (
+                      <span className={style.usersCellMuted}>—</span>
+                    )}
+                  </td>
+
+                  {/* Suspend */}
+                  <td className={`${style.usersSuspendCol} ${style.usersTableActions}`}>
+                    {tdata.firstName && !tdata.isSuspended && (
+                      <button
+                        type="button"
+                        className={style.usersSuspendBtn}
+                        onClick={async () => {
+                          const res = await axios.put(`${serverURL}/api/users/suspend/${tdata._id}`);
+                          if (res?.status === 200) { toast.success(res.data.message); window.location.reload(); }
+                        }}
+                      >
+                        Suspend
+                      </button>
+                    )}
+                    {tdata.firstName && tdata.isSuspended && (
+                      <button
+                        type="button"
+                        className={style.usersUnsuspendBtn}
+                        onClick={async () => {
+                          const res = await axios.put(`${serverURL}/api/users/unsuspend/${tdata._id}`);
+                          if (res?.status === 200) { toast.success(res.data.message); window.location.reload(); }
+                        }}
+                      >
+                        Banned
+                      </button>
+                    )}
+                    {!tdata.firstName && <span className={style.usersCellMuted}>—</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         </div>
       )}
 

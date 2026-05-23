@@ -1,110 +1,160 @@
 import React, { useEffect, useState } from "react";
-import style from "./ui.module.css"
+import style from "./ui.module.css";
 import { Link, useParams } from "react-router-dom";
-import { db, } from "../../firebase";
-import { collection, getDocs, } from "firebase/firestore";
+import { db } from "../../firebase";
+import { collection, getDocs } from "firebase/firestore";
 import { selecteUsers } from "../../Store/authSlice";
 import { useSelector } from "react-redux";
 
 export function UserChats() {
-    const StoreAllUsers = useSelector(selecteUsers)
-    const { id } = useParams()
-    const [ChatUser, setChatUser] = useState([]) //other users who current user chatted with
+    const StoreAllUsers = useSelector(selecteUsers);
+    const { id } = useParams();
+    const [chatUsers, setChatUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
 
     useEffect(() => {
-        if (id) {
-            const fetchData = async () => {
-                const querySnapshot = await getDocs(collection(db, "chats")); //all chats
-                let Mychat = []
-                //get all chat room ids of the current user
-                querySnapshot.forEach((doc) => {
-                    if (doc.id.includes(id)) {
-                        Mychat.push({
-                            chatId: doc.id,
-                        })
-                    }
-                });
+        if (!id) return;
+        const fetchData = async () => {
+            setLoading(true);
+            const querySnapshot = await getDocs(collection(db, "chats"));
+            const myChats = [];
+            querySnapshot.forEach((doc) => {
+                if (doc.id.includes(id)) {
+                    myChats.push({ chatId: doc.id });
+                }
+            });
 
-                const chatedUsers = Mychat.map(chat => {
-                    const otherUserId = chat.chatId.split('_').find(userid => userid !== id);
-                    const otherUser = StoreAllUsers.find(user => user._id === otherUserId);
-                    // // console.log(otherUser)
-                    const otherUserData = {
-                        chatId: chat.chatId,
-                        otherUser
-                    }
-                    return otherUserData;
-                }).filter((user) => user.otherUser !== undefined);
-                setChatUser(chatedUsers)
+            const chatted = myChats
+                .map((chat) => {
+                    const otherUserId = chat.chatId.split("_").find((uid) => uid !== id);
+                    const otherUser = StoreAllUsers.find((u) => u._id === otherUserId);
+                    return otherUser ? { chatId: chat.chatId, otherUser } : null;
+                })
+                .filter(Boolean);
 
-            };
-            fetchData();
-        }
+            setChatUsers(chatted);
+            setLoading(false);
+        };
+        fetchData();
     }, [id, StoreAllUsers]);
 
-    return (<>
-        <div className={`p-2  text-light ${style.Sheading} `}>
-            <h2 className={style.Heading}>
-                User All Chats
-            </h2>
-        </div>
+    const filtered = chatUsers.filter(({ otherUser }) => {
+        const q = search.toLowerCase();
+        const name = `${otherUser.firstName || ""} ${otherUser.lastName || ""}`.toLowerCase();
+        return name.includes(q) || (otherUser.email || "").toLowerCase().includes(q);
+    });
 
+    function getInitials(user) {
+        const parts = [user.firstName, user.lastName].filter(Boolean);
+        return parts.map((p) => p[0]).join("").toUpperCase().slice(0, 2) || "?";
+    }
 
-        <div className="my-2 p-2">
+    return (
+        <div className={style.uctPage}>
+            <div className={style.uctToolbar}>
+                <div className={style.uctSearchWrap}>
+                    <i className={`bi bi-search ${style.uctSearchIcon}`} />
+                    <input
+                        type="text"
+                        placeholder="Search by name or email…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className={style.uctSearchInput}
+                    />
+                    {search && (
+                        <button
+                            className={style.uctSearchClear}
+                            onClick={() => setSearch("")}
+                            type="button"
+                            aria-label="Clear"
+                        >
+                            <i className="bi bi-x" />
+                        </button>
+                    )}
+                </div>
+                <span className={style.uctCount}>
+                    {loading ? "—" : `${filtered.length} conversation${filtered.length !== 1 ? "s" : ""}`}
+                </span>
+            </div>
 
-            <div className={style.containerContent}>
-                {ChatUser.length > 0 ?
-                    <div>
-                        <div className={style.HeadingContent}>
-                            <div className="row gap-2 text-left">
-                                <div className="col">
-                                    <h2 className="fw-bold fs-5">User Name</h2>
-                                </div>
+            <div className={style.uctTableWrap}>
+                <table className={style.uctTable}>
+                    <thead>
+                        <tr>
+                            <th className={style.uctTh} style={{ width: 44 }}>#</th>
+                            <th className={style.uctTh}>User</th>
+                            <th className={style.uctTh}>Email</th>
+                            <th className={style.uctTh} style={{ width: 110, textAlign: "center" }}>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading && (
+                            [...Array(4)].map((_, i) => (
+                                <tr key={i} className={style.uctSkeletonRow}>
+                                    <td><div className={style.uctSkeleton} style={{ width: 20 }} /></td>
+                                    <td>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                            <div className={`${style.uctSkeleton} ${style.uctSkeletonCircle}`} />
+                                            <div className={style.uctSkeleton} style={{ width: 120 }} />
+                                        </div>
+                                    </td>
+                                    <td><div className={style.uctSkeleton} style={{ width: 180 }} /></td>
+                                    <td><div className={style.uctSkeleton} style={{ width: 70, margin: "0 auto" }} /></td>
+                                </tr>
+                            ))
+                        )}
 
-                                <div className="col">
-                                    <h2 className="fw-bold fs-5">Email</h2>
-                                </div>
+                        {!loading && filtered.length === 0 && (
+                            <tr>
+                                <td colSpan={4} className={style.uctEmptyRow}>
+                                    <i className="bi bi-chat-slash" style={{ fontSize: 28, opacity: 0.3 }} />
+                                    <p>{search ? "No results match your search." : "No chats found."}</p>
+                                </td>
+                            </tr>
+                        )}
 
-                            </div>
-                        </div>
-                        {/* to={` */}
-                        {ChatUser.map((userobj, index) => {
-                            return <div key={index} className={style.Content}>
-                                <div style={{ cursor: "pointer", textDecoration: "none", color: "black" }} className={`row text-left `}>
-                                    <Link to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats/${userobj.chatId}/Chat`} style={{ textDecoration: "underline", color: "green" }} className="col d-flex align-items-center justify-content-start gap-2">
-                                        <div>
-                                            {
-                                                userobj.otherUser.profileImageUrl &&
+                        {!loading && filtered.map(({ chatId, otherUser }, index) => {
+                            const fullName = `${otherUser.firstName || ""} ${otherUser.lastName || ""}`.trim();
+                            return (
+                                <tr key={chatId} className={style.uctRow}>
+                                    <td className={style.uctTd} style={{ color: "#9ca3af", fontSize: 13 }}>
+                                        {index + 1}
+                                    </td>
+                                    <td className={style.uctTd}>
+                                        <div className={style.uctUserCell}>
+                                            {otherUser.profileImageUrl ? (
                                                 <img
-                                                    src={userobj.otherUser.profileImageUrl}
-                                                    className="rounded-circle"
-                                                    alt="avatar"
-                                                    width="45"
-                                                    height="45"
+                                                    src={otherUser.profileImageUrl}
+                                                    alt={fullName}
+                                                    className={style.uctAvatar}
                                                 />
-                                            }
+                                            ) : (
+                                                <div className={style.uctAvatarFallback}>
+                                                    {getInitials(otherUser)}
+                                                </div>
+                                            )}
+                                            <span className={style.uctUserName}>{fullName || "—"}</span>
                                         </div>
-                                        <div>
-                                            <h2 className="fw-medium fs-6">{userobj.otherUser.firstName + " " + userobj.otherUser.lastName}</h2>
-                                        </div>
-                                    </Link>
-
-
-                                    <div className="col d-flex align-items-center justify-content-start">
-                                        <h2 className="fw-medium fs-6">{userobj.otherUser.email}</h2>
-                                    </div>
-
-
-                                </div>
-                            </div>
+                                    </td>
+                                    <td className={style.uctTd}>
+                                        <span className={style.uctEmail}>{otherUser.email || "—"}</span>
+                                    </td>
+                                    <td className={style.uctTd} style={{ textAlign: "center" }}>
+                                        <Link
+                                            to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats/${chatId}/Chat`}
+                                            className={style.uctOpenBtn}
+                                        >
+                                            <i className="bi bi-chat-dots-fill" />
+                                            Open
+                                        </Link>
+                                    </td>
+                                </tr>
+                            );
                         })}
-                    </div>
-                    :
-                    <div><p className="text-center fw-bold">
-                        No Chats Found
-                    </p></div>
-                }
+                    </tbody>
+                </table>
             </div>
         </div>
-    </>)
+    );
 }

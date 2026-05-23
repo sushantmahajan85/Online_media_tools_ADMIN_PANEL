@@ -1,177 +1,167 @@
 import { useEffect, useState } from "react";
-import { Col, Row } from "reactstrap";
+import { Link } from "react-router-dom";
 import TopCards from "../Cards/TopCards";
-import style from "../Pages/ui.module.css"
 import { useSelector } from "react-redux";
-import {  selecteUsers , selectAllPinnedPosts , selectAllPosts } from '../../Store/authSlice';
+import { selecteUsers, selectAllPinnedPosts, selectAllPosts } from "../../Store/authSlice";
+import style from "../Pages/ui.module.css";
 
+const ADMIN_ID = "658c582ff1bc8978d2300823";
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function formatDate() {
+  return new Date().toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
+}
+
+const QUICK_LINKS = [
+  { to: "/Admin/AdminDashboard/Users",            icon: "bi-people-fill",         label: "Manage Users",         color: "#2563eb", bg: "#eff6ff" },
+  { to: "/Admin/AdminDashboard/Posts",            icon: "bi-file-earmark-text-fill", label: "Manage Posts",      color: "#16a34a", bg: "#dcfce7" },
+  { to: "/Admin/AdminDashboard/Chats",            icon: "bi-chat-dots-fill",      label: "All Chats",            color: "#7c3aed", bg: "#f5f3ff" },
+  { to: "/Admin/AdminDashboard/BumperPost",       icon: "bi-pin-angle-fill",      label: "Pinned Posts",         color: "#d97706", bg: "#fffbeb" },
+  { to: "/Admin/AdminDashboard/ReportRequests",   icon: "bi-flag-fill",           label: "Report Requests",      color: "#e11d48", bg: "#fff1f2" },
+  { to: "/Admin/AdminDashboard/sendnotification", icon: "bi-bell-fill",           label: "Send Notification",    color: "#0891b2", bg: "#ecfeff" },
+];
 
 const Starter = () => {
+  const storeUsers       = useSelector(selecteUsers);
+  const storeAllPosts    = useSelector(selectAllPosts);
+  const storePinnedPosts = useSelector(selectAllPinnedPosts);
 
-  const storeusers = useSelector(selecteUsers)
-  const storeAllPosts= useSelector(selectAllPosts)
-  const storeAllBumperPosts  = useSelector(selectAllPinnedPosts)
-  const [SuspendedUsers, setSuspendedUsers] = useState()
-  const [ApprovedPosts, setApprovedPosts] = useState(0)
+  const [suspendedUsers, setSuspendedUsers]   = useState(0);
+  const [approvedPosts, setApprovedPosts]     = useState(0);
+  const [pendingPosts, setPendingPosts]       = useState(0);
 
-
-  useEffect(() => {
-    let suspendedUserSum = 0;
-    // console.log(storeusers.length);
-    // console.log(storeusers[0])
-    storeusers.forEach((userobjects) => {
-      if (userobjects.isSuspended === true) {
-        //console.log(userobjects)
-        suspendedUserSum++;
-      }
-    })
-    setSuspendedUsers(suspendedUserSum)
-  }, [storeusers])
+  const adminUser = storeUsers.find((u) => u._id === ADMIN_ID);
+  const adminName = adminUser?.firstName || "Admin";
 
   useEffect(() => {
-    let MyApprovedPosts = 0;
-    storeAllPosts.forEach((userobjects) => {
-      if (userobjects.isApproved === true) {
-        MyApprovedPosts++;
-      }
-    })
-    setApprovedPosts(MyApprovedPosts)
-  }, [storeAllPosts])
+    setSuspendedUsers(storeUsers.filter((u) => u.isSuspended).length);
+  }, [storeUsers]);
 
-  
+  useEffect(() => {
+    setApprovedPosts(storeAllPosts.filter((p) => p.isApproved && !p.underApproval).length);
+    setPendingPosts(storeAllPosts.filter((p) => p.underApproval).length);
+  }, [storeAllPosts]);
 
+  const activeUsers  = storeUsers.length - suspendedUsers;
+  const otherPosts   = storeAllPosts.length - approvedPosts - pendingPosts;
 
-  return (<>
+  return (
+    <div className={style.dashPage}>
 
-
-    <div className={`p-2  text-light ${style.Sheading} `}>
-
-      <h2 className={style.Heading}>
-        Reports
-      </h2>
-    </div>
-    <div className="p-3">
-      <div className={`${style.mainDashboard} `}>
-        <h2>
-          Statistics
-        </h2>
-        <div >
-
-
-          <div>
-            {storeusers && <>
-              <div>
-                <p className="fw-bold ">
-                  Users
-                </p>
-              </div>
-              <Row>
-                <Col sm="6" lg="4">
-                  <TopCards
-                    bg=" bg-light-info text-info"
-                    title="Profit"
-                    subtitle="Total Users"
-                    earning={storeusers.length}
-                    icon="bi bi-people"
-                  />
-                </Col>
-
-
-                <Col sm="6" lg="4">
-                  <TopCards
-                    bg="bg-light-success text-success"
-                    title="Sales"
-                    subtitle="Active Users"
-                    earning={+(storeusers.length) - SuspendedUsers}
-                    icon="bi bi-person-check"
-                  />
-                </Col>
-                <Col sm="6" lg="4">
-                  <TopCards
-                    bg="bg-light-danger text-danger"
-                    title="Refunds"
-                    subtitle="Suspended Users"
-                    earning={SuspendedUsers}
-                    icon="bi bi-person-dash"
-                  />
-                </Col>
-              </Row>
-            </>}
-            
+      {/* Welcome banner */}
+      <div className={style.dashBanner}>
+        <div className={style.dashBannerContent}>
+          <div className={style.dashBannerText}>
+            <h1 className={style.dashGreeting}>{getGreeting()}, {adminName} 👋</h1>
+            <p className={style.dashDate}>{formatDate()}</p>
+            <p className={style.dashSubtitle}>Here's a snapshot of your platform today.</p>
           </div>
-
-
-          <div>
-            {storeAllPosts && storeAllPosts.length > 0 && <>
-              <div>
-                <p className="fw-bold ">
-                 Posts
-                </p>
-              </div>
-              <Row>
-                <Col sm="6" lg="4">
-                  <TopCards
-                    bg=" bg-light-info text-info"
-                    title="Profit"
-                    subtitle="All Posts"
-                    earning={storeAllPosts.length}
-                    icon="bi bi-people"
-                  />
-                </Col>
-
-
-                <Col sm="6" lg="4">
-                  <TopCards
-                    bg="bg-light-success text-success"
-                    title="Sales"
-                    subtitle="Approved Posts"
-                    earning={ApprovedPosts}
-                    icon="bi bi-person-check"
-                  />
-                </Col>
-                <Col sm="6" lg="4">
-                  <TopCards
-                    bg="bg-light-danger text-danger"
-                    title="Refunds"
-                    subtitle="Other Posts"
-                    earning={+(storeAllPosts.length) - +(ApprovedPosts)}
-                    icon="bi bi-person-dash"
-                  />
-                </Col>
-              </Row>
-            </>}
-            
-          </div>
-          <div>
-            {storeAllBumperPosts && storeAllBumperPosts.length > 0 && <>
-              <div>
-                <p className="fw-bold ">
-                  Bumper Posts
-                </p>
-              </div>
-              <Row>
-                <Col sm="6" lg="4">
-                  <TopCards
-                    bg=" bg-light-info text-info"
-                    title="Profit"
-                    subtitle="Total Bumper Post "
-                    earning={storeAllBumperPosts.length}
-                    icon="bi bi-people"
-                  />
-                </Col>
-
-
-               
-              </Row>
-            </>}
-            
+          <div className={style.dashBannerIllustration}>
+            <i className="bi bi-bar-chart-fill" />
           </div>
         </div>
       </div>
+
+      <div className={style.dashBody}>
+
+        {/* ── Users ── */}
+        <section className={style.dashSection}>
+          <div className={style.dashSectionHeader}>
+            <div className={style.dashSectionIcon} style={{ background: "#eff6ff", color: "#2563eb" }}>
+              <i className="bi bi-people-fill" />
+            </div>
+            <div>
+              <h2 className={style.dashSectionTitle}>Users</h2>
+              <p className={style.dashSectionSub}>Platform user overview</p>
+            </div>
+            <Link to="/Admin/AdminDashboard/Users" className={style.dashSectionLink}>
+              View all <i className="bi bi-arrow-right" />
+            </Link>
+          </div>
+          <div className={style.dashCardsRow}>
+            <TopCards value={storeUsers.length}  label="Total Users"     icon="bi bi-people"       color="blue"  />
+            <TopCards value={activeUsers}         label="Active Users"    icon="bi bi-person-check"  color="green" />
+            <TopCards value={suspendedUsers}      label="Suspended"       icon="bi bi-person-dash"   color="red"   />
+          </div>
+        </section>
+
+        {/* ── Posts ── */}
+        <section className={style.dashSection}>
+          <div className={style.dashSectionHeader}>
+            <div className={style.dashSectionIcon} style={{ background: "#dcfce7", color: "#16a34a" }}>
+              <i className="bi bi-file-earmark-text-fill" />
+            </div>
+            <div>
+              <h2 className={style.dashSectionTitle}>Posts</h2>
+              <p className={style.dashSectionSub}>Content published on the platform</p>
+            </div>
+            <Link to="/Admin/AdminDashboard/Posts" className={style.dashSectionLink}>
+              View all <i className="bi bi-arrow-right" />
+            </Link>
+          </div>
+          <div className={style.dashCardsRow}>
+            <TopCards value={storeAllPosts.length} label="Total Posts"    icon="bi bi-file-earmark-text" color="blue"  />
+            <TopCards value={approvedPosts}         label="Approved"       icon="bi bi-check-circle"      color="green" />
+            <TopCards value={pendingPosts}          label="Pending"        icon="bi bi-hourglass-split"    color="amber" />
+            <TopCards value={otherPosts}            label="Disapproved"    icon="bi bi-x-circle"          color="red"   />
+          </div>
+        </section>
+
+        {/* ── Pinned Posts ── */}
+        <section className={style.dashSection}>
+          <div className={style.dashSectionHeader}>
+            <div className={style.dashSectionIcon} style={{ background: "#fffbeb", color: "#d97706" }}>
+              <i className="bi bi-pin-angle-fill" />
+            </div>
+            <div>
+              <h2 className={style.dashSectionTitle}>Pinned Posts</h2>
+              <p className={style.dashSectionSub}>Highlighted content across the app</p>
+            </div>
+            <Link to="/Admin/AdminDashboard/BumperPost" className={style.dashSectionLink}>
+              View all <i className="bi bi-arrow-right" />
+            </Link>
+          </div>
+          <div className={style.dashCardsRow}>
+            <TopCards value={storePinnedPosts.length} label="Total Pinned Posts" icon="bi bi-pin-angle" color="amber" />
+            <TopCards value={5 - storePinnedPosts.length} label="Slots Available"   icon="bi bi-plus-circle" color="gray"  />
+          </div>
+        </section>
+
+        {/* ── Quick Access ── */}
+        <section className={style.dashSection}>
+          <div className={style.dashSectionHeader}>
+            <div className={style.dashSectionIcon} style={{ background: "#f5f3ff", color: "#7c3aed" }}>
+              <i className="bi bi-lightning-fill" />
+            </div>
+            <div>
+              <h2 className={style.dashSectionTitle}>Quick Access</h2>
+              <p className={style.dashSectionSub}>Jump to any section instantly</p>
+            </div>
+          </div>
+          <div className={style.dashQuickGrid}>
+            {QUICK_LINKS.map(({ to, icon, label, color, bg }) => (
+              <Link key={to} to={to} className={style.dashQuickCard}>
+                <div className={style.dashQuickIcon} style={{ background: bg, color }}>
+                  <i className={`bi ${icon}`} />
+                </div>
+                <span className={style.dashQuickLabel}>{label}</span>
+                <i className="bi bi-chevron-right" style={{ fontSize: 11, color: "#9ca3af", marginLeft: "auto" }} />
+              </Link>
+            ))}
+          </div>
+        </section>
+
+      </div>
     </div>
-
-
-  </>);
+  );
 };
 
 export default Starter;

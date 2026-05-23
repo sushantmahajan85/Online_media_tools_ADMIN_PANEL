@@ -128,73 +128,150 @@ export function AllChats() {
     setIsLoading(false);
   }, [searchTerm, searchMessage, chats]);
 
+  function getInitials(name) {
+    if (!name || name === "Unknown Sender" || name === "Unknown Receiver")
+      return "?";
+    const parts = name.trim().split(" ").filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  function formatTime(date) {
+    if (!date) return "—";
+    const now = new Date();
+    const diff = now - date;
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  }
+
   return (
-    <>
-      <div className={`p-2 text-light ${style.Sheading}`}>
-        <h2 className={style.Heading}>User Chats</h2>
+    <div className={style.acpPage}>
+      <div className={style.udpPageHeader}>
+        <nav className={style.udpBreadcrumb} aria-label="breadcrumb">
+          <span>Dashboard</span>
+          <span className={style.udpBreadcrumbSep}>/</span>
+          <span className={style.udpBreadcrumbActive}>All Chats</span>
+        </nav>
+        <div className={style.acpHeaderRow}>
+          <h1 className={style.udpPageTitle}>All Chats</h1>
+          {!isLoading && (
+            <span className={style.acpCountBadge}>
+              {filteredChats.length} conversation{filteredChats.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* 🔍 Search Input Fields */}
-      <div className={`p-3 ${style.searchBar}`}>
-        <input
-          type="text"
-          placeholder="Search by sender/receiver"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="form-control"
-        />
-        <input
-          type="text"
-          placeholder="Search by message content..."
-          value={searchMessage}
-          onChange={(e) => setSearchMessage(e.target.value)}
-          className="form-control"
-        />
-      </div>
-
-      {/* 🔄 Loader */}
-      {isLoading && (
-        <div className="text-center my-3">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
+      <div className={style.acpShell}>
+        <div className={style.acpSearchRow}>
+          <div className={style.acpSearchField}>
+            <span className={`bi bi-person-search ${style.acpSearchIcon}`} />
+            <input
+              type="text"
+              placeholder="Search by name…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={style.acpSearchInput}
+            />
+            {searchTerm && (
+              <button
+                className={style.acpSearchClear}
+                onClick={() => setSearchTerm("")}
+                aria-label="Clear"
+              >
+                <span className="bi bi-x" />
+              </button>
+            )}
+          </div>
+          <div className={style.acpSearchField}>
+            <span className={`bi bi-chat-text ${style.acpSearchIcon}`} />
+            <input
+              type="text"
+              placeholder="Search by message…"
+              value={searchMessage}
+              onChange={(e) => setSearchMessage(e.target.value)}
+              className={style.acpSearchInput}
+            />
+            {searchMessage && (
+              <button
+                className={style.acpSearchClear}
+                onClick={() => setSearchMessage("")}
+                aria-label="Clear"
+              >
+                <span className="bi bi-x" />
+              </button>
+            )}
           </div>
         </div>
-      )}
 
-      {/* 🔹 Display Filtered Chats */}
-      {!isLoading && filteredChats.length > 0 ? (
-        <div className="my-2 p-2">
-          <div className={style.containerContent}>
-            {filteredChats.map((chat) => (
-              <div key={chat.chatId} className={style.Content}>
-                <div className="row gap-2 p-2">
-                  <div className="col text-center">
-                    {chat.senderName || "N/A"}
-                  </div>
-                  <div className="col text-center">
-                    {chat.receiverName || "N/A"}
-                  </div>
-                  <div className="col text-center">
-                    {chat.timestamp ? chat.timestamp.toLocaleString() : "N/A"}
-                  </div>
-                  <Link
-                    to={chat.chatLink}
-                    className="col text-center text-success"
-                  >
-                    {chat.lastMessage || "N/A"}
-                  </Link>
-                </div>
-              </div>
+        {isLoading && (
+          <div className={style.acpLoadingWrap}>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className={style.acpSkeleton} />
             ))}
           </div>
-        </div>
-      ) : (
-        !isLoading && (
-          <div className="text-center my-5">
-            <p className="fw-bold">No Chats Found</p>
+        )}
+
+        {!isLoading && filteredChats.length > 0 && (
+          <div className={style.acpList}>
+            {filteredChats.map((chat) => (
+              <Link
+                key={chat.chatId}
+                to={chat.chatLink}
+                className={style.acpChatCard}
+              >
+                <div className={style.acpParticipants}>
+                  <div className={style.acpAvatar} data-name={chat.senderName}>
+                    {getInitials(chat.senderName)}
+                  </div>
+                  <div className={style.acpArrow}>
+                    <span className="bi bi-arrow-right" />
+                  </div>
+                  <div className={style.acpAvatar} data-name={chat.receiverName} style={{ background: "linear-gradient(135deg,#0bb7af,#3699ff)" }}>
+                    {getInitials(chat.receiverName)}
+                  </div>
+                </div>
+
+                <div className={style.acpChatInfo}>
+                  <div className={style.acpChatNames}>
+                    <span className={style.acpSenderName}>{chat.senderName}</span>
+                    <span className={style.acpNameSep}>→</span>
+                    <span className={style.acpReceiverName}>{chat.receiverName}</span>
+                  </div>
+                  <div className={style.acpLastMsg}>
+                    <span className="bi bi-chat-left-text" />
+                    <span>{chat.lastMessage}</span>
+                  </div>
+                </div>
+
+                <div className={style.acpChatMeta}>
+                  <span className={style.acpTimestamp}>
+                    <span className="bi bi-clock" />
+                    {formatTime(chat.timestamp)}
+                  </span>
+                  <span className={style.acpOpenBtn}>
+                    Open <span className="bi bi-arrow-right-short" />
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
-        )
-      )}
-    </>
+        )}
+
+        {!isLoading && filteredChats.length === 0 && (
+          <div className={style.acpEmpty}>
+            <span className={`bi bi-chat-slash ${style.acpEmptyIcon}`} />
+            <p className={style.acpEmptyTitle}>No chats found</p>
+            <p className={style.acpEmptyHint}>Try adjusting your search terms</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
