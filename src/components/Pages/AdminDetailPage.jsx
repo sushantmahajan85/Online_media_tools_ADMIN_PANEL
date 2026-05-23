@@ -167,16 +167,6 @@ export function AdminDetailpage() {
             Account Details
           </div>
 
-          <div className={style.adpInfoRow}>
-            <div className={style.adpInfoIcon}>
-              <i className="bi bi-hash" />
-            </div>
-            <div>
-              <div className={style.adpInfoLabel}>User ID</div>
-              <div className={style.adpIdBadge}>{user._id}</div>
-            </div>
-          </div>
-
           {user.Designation && (
             <div className={style.adpInfoRow}>
               <div className={style.adpInfoIcon}>
