@@ -1,11 +1,11 @@
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import "react-dropdown/style.css";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Button, CardBody, Input, Table } from "reactstrap";
-import { selecteUsers } from "../../Store/authSlice";
+import { allusers, selecteUsers } from "../../Store/authSlice";
 import { displayText, formatJoiningDate } from "../../utils/userDisplay";
 import { DeleteModel } from "./DeleteModel";
 import style from "./ui.module.css";
@@ -22,6 +22,7 @@ function userDisplayName(tdata) {
 }
 
 const ProjectTables = () => {
+  const dispatch = useDispatch();
   const storeUsers = useSelector(selecteUsers);
   const [deltedId, setDeletedId] = useState();
   const [deleteWhatUsers, setdeleteWhatUsers] = useState("");
@@ -31,6 +32,20 @@ const ProjectTables = () => {
   const [modal, setModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const toggle = () => setModal(!modal);
+
+  useEffect(() => {
+    async function refreshUsers() {
+      try {
+        const response = await axios.get(`${serverURL}/api/users/get_all_users`);
+        if (response?.status === 200 && response.data?.users) {
+          dispatch(allusers(response.data.users));
+        }
+      } catch {
+        /* keep cached list on failure */
+      }
+    }
+    refreshUsers();
+  }, [dispatch]);
 
   useEffect(() => {
     let alluser = storeUsers.filter((user) => user._id !== EXCLUDED_ADMIN_ID);
@@ -123,8 +138,6 @@ const ProjectTables = () => {
             <colgroup>
               <col className={style.usersColName} />
               <col className={style.usersColEmail} />
-              <col className={style.usersColContact} />
-              <col className={style.usersColRole} />
               <col className={style.usersColAccount} />
               <col className={style.usersColIp} />
               <col className={style.usersColDevice} />
@@ -137,8 +150,6 @@ const ProjectTables = () => {
               <tr>
                 <th>Name</th>
                 <th>Email</th>
-                <th>Contact</th>
-                <th>Role</th>
                 <th>Account</th>
                 <th>IP</th>
                 <th>Device</th>
@@ -185,31 +196,46 @@ const ProjectTables = () => {
                     </div>
                   </td>
 
-                  {/* Contact */}
-                  <td>
-                    <div className={style.usersCellInner}>
-                      <span className={`${style.usersCellEllipsis} ${style.usersCellText}`} title={displayText(tdata.mobileNumber)}>
-                        {displayText(tdata.mobileNumber)}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Role */}
-                  <td>
-                    <div className={style.usersCellInner}>
-                      <span className={`${style.usersCellClamp} ${style.usersCellText}`} title={displayText(tdata.Designation)}>
-                        {displayText(tdata.Designation)}
-                      </span>
-                    </div>
-                  </td>
-
                   {/* Account */}
                   <td>
-                    {tdata.isverified ? (
-                      <span className={style.usersVerifiedBadge}>Verified</span>
-                    ) : (
-                      <span className={style.usersUnverifiedBadge}>Unverified</span>
-                    )}
+                    <div className={style.usersAuthBadges}>
+                      {tdata.isGoogleVerified && (
+                        <span className={style.usersGoogleBadge} title="Google verified">
+                          <i className="bi bi-google" />
+                        </span>
+                      )}
+                      {tdata.isLinkedinVerified && (
+                        tdata.LinkedIn ? (
+                          <a
+                            href={tdata.LinkedIn}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={style.usersLinkedInLink}
+                            title="LinkedIn verified — view profile"
+                          >
+                            <i className="bi bi-linkedin" />
+                          </a>
+                        ) : (
+                          <a
+                            href={(() => {
+                              const parts = [userDisplayName(tdata)];
+                              if (tdata.Designation) parts.push(tdata.Designation);
+                              if (tdata.Company) parts.push(tdata.Company);
+                              return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(parts.join(" "))}`;
+                            })()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={style.usersLinkedInSearch}
+                            title={`LinkedIn verified — search: ${[userDisplayName(tdata), tdata.Designation, tdata.Company].filter(Boolean).join(", ")}`}
+                          >
+                            <i className="bi bi-linkedin" />
+                          </a>
+                        )
+                      )}
+                      {!tdata.isGoogleVerified && !tdata.isLinkedinVerified && (
+                        <span className={style.usersCellMuted}>—</span>
+                      )}
+                    </div>
                   </td>
 
                   {/* IP */}

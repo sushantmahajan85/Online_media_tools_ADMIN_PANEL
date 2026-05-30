@@ -696,7 +696,7 @@
 .usersTable {
   table-layout: fixed;
   width: 100%;
-  min-width: 72rem;
+  min-width: 54.5rem;
   margin-bottom: 0;
   font-size: 0.875rem;
   border-collapse: collapse;
@@ -900,6 +900,86 @@
   border: 1px solid #fecdd3;
   white-space: nowrap;
   line-height: 1.4;
+}
+
+.usersAuthBadges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.usersGoogleBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.usersLinkedInLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: #eff6ff;
+  color: #0077b5;
+  border: 1px solid #bfdbfe;
+  font-size: 11px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.usersLinkedInLink:hover {
+  background: #0077b5;
+  color: #fff;
+  border-color: #0077b5;
+}
+
+.usersLinkedInSearch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #0077b5;
+  border: 1px dashed #93c5fd;
+  font-size: 11px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.usersLinkedInSearch:hover {
+  background: #0077b5;
+  color: #fff;
+  border-color: #0077b5;
+  opacity: 1;
+}
+
+.usersLinkedInBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: #eff6ff;
+  color: #0077b5;
+  border: 1px solid #bfdbfe;
+  font-size: 11px;
+  flex-shrink: 0;
 }
 
 .usersIconBtnDelete {
