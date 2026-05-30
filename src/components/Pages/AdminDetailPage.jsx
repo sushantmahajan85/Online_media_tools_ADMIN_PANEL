@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import style from "./ui.module.css";
 import { useSelector } from "react-redux";
-import { selecteUsers } from "../../Store/authSlice";
+import axios from "axios";
+import style from "./ui.module.css";
+import { selectAdmin, selecteUsers } from "../../Store/authSlice";
+import {
+  getAdminBearerToken,
+  getAdminProfileTargetId,
+  getAdminRoleLabel,
+  getAdminRole,
+  isSecondaryAdmin,
+  PRIMARY_SUPPORT_ADMIN_ID,
+  resolveAdminProfileUser,
+} from "../../utils/adminProfile";
 
-const ADMIN_ID = "658c582ff1bc8978d2300823";
+const serverURL = process.env.REACT_APP_SERVER_URL;
 
 const SOCIAL_LINKS = [
   { key: "Facebook", icon: "bi bi-facebook", color: "#1877f2" },
@@ -14,14 +24,103 @@ const SOCIAL_LINKS = [
   { key: "Telegram", icon: "bi bi-telegram", color: "#2ca5e0" },
 ];
 
+async function fetchUserById(userId) {
+  const res = await axios.get(
+    `${serverURL}/api/users/get_all_users?ids=${encodeURIComponent(userId)}`,
+  );
+  return res.data?.users?.[0] || null;
+}
+
 export function AdminDetailpage() {
-  const storeUser = useSelector(selecteUsers);
-  const [user, setUsers] = useState(null);
+  const adminAuth = useSelector(selectAdmin);
+  const storeUsers = useSelector(selecteUsers);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const role = getAdminRole(adminAuth, user);
+  const roleLabel = getAdminRoleLabel(role);
+  const canAccessAdminChats = !isSecondaryAdmin(adminAuth, user);
+  const profileId = getAdminProfileTargetId(adminAuth, user) || user?._id;
 
   useEffect(() => {
-    const found = storeUser.find((u) => u._id === ADMIN_ID);
-    setUsers(found || null);
-  }, [storeUser]);
+    let cancelled = false;
+
+    async function loadProfile() {
+      setLoading(true);
+
+      const resolved = resolveAdminProfileUser(adminAuth, storeUsers);
+      if (resolved) {
+        if (!cancelled) {
+          setUser(resolved);
+          setLoading(false);
+        }
+        return;
+      }
+
+      const targetId = getAdminProfileTargetId(adminAuth);
+      const idsToTry = [
+        targetId,
+        !isSecondaryAdmin(adminAuth) ? PRIMARY_SUPPORT_ADMIN_ID : null,
+      ].filter(Boolean);
+
+      for (const id of idsToTry) {
+        try {
+          const fetched = await fetchUserById(id);
+          if (fetched) {
+            if (!cancelled) {
+              setUser(fetched);
+              setLoading(false);
+            }
+            return;
+          }
+        } catch {
+          /* try next id */
+        }
+      }
+
+      const token = getAdminBearerToken(adminAuth);
+      if (token) {
+        try {
+          const res = await axios.get(`${serverURL}/api/admin/profile`, {
+            headers: { authorization: `Bearer ${token}` },
+          });
+          const fromApi =
+            res.data?.mongoUser || res.data?.admin?.mongoProfile || null;
+          if (!cancelled && fromApi) {
+            setUser(fromApi);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          /* fall through */
+        }
+      }
+
+      if (!cancelled) {
+        setUser(null);
+        setLoading(false);
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [adminAuth, storeUsers]);
+
+  if (loading) {
+    return (
+      <div className={style.adpPage}>
+        <div className={style.adpCover}>
+          <div className={style.adpCoverOverlay} />
+        </div>
+        <div style={{ padding: "40px 32px", color: "#6b7280", textAlign: "center" }}>
+          Loading profile…
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -30,7 +129,7 @@ export function AdminDetailpage() {
           <div className={style.adpCoverOverlay} />
         </div>
         <div style={{ padding: "40px 32px", color: "#6b7280", textAlign: "center" }}>
-          Loading profile…
+          Profile not found for this admin account.
         </div>
       </div>
     );
@@ -45,12 +144,10 @@ export function AdminDetailpage() {
 
   return (
     <div className={style.adpPage}>
-      {/* Cover */}
       <div className={style.adpCover}>
         <div className={style.adpCoverOverlay} />
       </div>
 
-      {/* Avatar + Actions row */}
       <div className={style.adpProfileRow}>
         <div className={style.adpAvatarWrap}>
           {user.profileImageUrl ? (
@@ -72,26 +169,29 @@ export function AdminDetailpage() {
         </div>
 
         <div className={style.adpProfileActions}>
-          <Link
-            to={`/Admin/AdminDashboard/UserDetails/${ADMIN_ID}/UserChats`}
-            className={`${style.adpActionBtn} ${style.adpActionBtnPrimary}`}
-          >
-            <i className="bi bi-chat-dots" />
-            Chats
-          </Link>
-          <Link
-            to={`/Admin/AdminDashboard/UserDetails/${ADMIN_ID}/Posts`}
-            className={`${style.adpActionBtn} ${style.adpActionBtnSecondary}`}
-          >
-            <i className="bi bi-grid" />
-            Posts
-          </Link>
+          {canAccessAdminChats && profileId && (
+            <Link
+              to={`/Admin/AdminDashboard/UserDetails/${profileId}/UserChats`}
+              className={`${style.adpActionBtn} ${style.adpActionBtnPrimary}`}
+            >
+              <i className="bi bi-chat-dots" />
+              Chats
+            </Link>
+          )}
+          {profileId && (
+            <Link
+              to={`/Admin/AdminDashboard/UserDetails/${profileId}/Posts`}
+              className={`${style.adpActionBtn} ${style.adpActionBtnSecondary}`}
+            >
+              <i className="bi bi-grid" />
+              Posts
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Name + Designation */}
       <div className={style.adpNameBlock}>
-        <div className={style.adpName}>{fullName || "Unknown Admin"}</div>
+        <div className={style.adpName}>{fullName || user.email || "Admin"}</div>
         {user.Designation && (
           <div className={style.adpDesignation}>
             <i className="bi bi-briefcase" />
@@ -103,10 +203,7 @@ export function AdminDetailpage() {
         )}
       </div>
 
-      {/* Info Grid */}
       <div className={style.adpGrid}>
-
-        {/* Contact Info */}
         <div className={style.adpCard}>
           <div className={style.adpCardTitle}>
             <i className="bi bi-person-lines-fill" />
@@ -160,7 +257,6 @@ export function AdminDetailpage() {
           </div>
         </div>
 
-        {/* Account Details */}
         <div className={style.adpCard}>
           <div className={style.adpCardTitle}>
             <i className="bi bi-fingerprint" />
@@ -185,12 +281,11 @@ export function AdminDetailpage() {
             </div>
             <div>
               <div className={style.adpInfoLabel}>Role</div>
-              <div className={style.adpInfoValue}>Administrator</div>
+              <div className={style.adpInfoValue}>{roleLabel}</div>
             </div>
           </div>
         </div>
 
-        {/* Social Links */}
         {activeSocials.length > 0 && (
           <div className={style.adpCard}>
             <div className={style.adpCardTitle}>
@@ -214,44 +309,46 @@ export function AdminDetailpage() {
           </div>
         )}
 
-        {/* Quick Actions */}
         <div className={style.adpCard}>
           <div className={style.adpCardTitle}>
             <i className="bi bi-lightning" />
             Quick Access
           </div>
           <div className={style.adpQuickGrid}>
-            <Link
-              to={`/Admin/AdminDashboard/UserDetails/${ADMIN_ID}/UserChats`}
-              className={style.adpQuickCard}
-            >
-              <div className={`${style.adpQuickIcon} ${style.adpQuickIconBlue}`}>
-                <i className="bi bi-chat-dots-fill" />
-              </div>
-              <div>
-                <div>Chats</div>
-                <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginTop: 2 }}>
-                  View all chats
+            {canAccessAdminChats && profileId && (
+              <Link
+                to={`/Admin/AdminDashboard/UserDetails/${profileId}/UserChats`}
+                className={style.adpQuickCard}
+              >
+                <div className={`${style.adpQuickIcon} ${style.adpQuickIconBlue}`}>
+                  <i className="bi bi-chat-dots-fill" />
                 </div>
-              </div>
-            </Link>
-            <Link
-              to={`/Admin/AdminDashboard/UserDetails/${ADMIN_ID}/Posts`}
-              className={style.adpQuickCard}
-            >
-              <div className={`${style.adpQuickIcon} ${style.adpQuickIconPurple}`}>
-                <i className="bi bi-grid-3x3-gap-fill" />
-              </div>
-              <div>
-                <div>Posts</div>
-                <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginTop: 2 }}>
-                  View all posts
+                <div>
+                  <div>Chats</div>
+                  <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginTop: 2 }}>
+                    View all chats
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            )}
+            {profileId && (
+              <Link
+                to={`/Admin/AdminDashboard/UserDetails/${profileId}/Posts`}
+                className={style.adpQuickCard}
+              >
+                <div className={`${style.adpQuickIcon} ${style.adpQuickIconPurple}`}>
+                  <i className="bi bi-grid-3x3-gap-fill" />
+                </div>
+                <div>
+                  <div>Posts</div>
+                  <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginTop: 2 }}>
+                    View all posts
+                  </div>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
-
       </div>
     </div>
   );

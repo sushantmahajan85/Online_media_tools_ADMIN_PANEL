@@ -1,24 +1,21 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, selectAdmin, selecteUsers } from "../../Store/authSlice";
 import { toast } from "react-toastify";
 import style from "./header.module.css";
-
-const ADMIN_ID = "658c582ff1bc8978d2300823";
+import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
+import { resolveAdminProfileUser } from "../../utils/adminProfile";
 
 function resolvePageInfo(pathname, storeUsers) {
-  // Normalize: strip /Admin prefix
   const path = pathname.replace(/^\/Admin/, "");
 
-  // Helper to get user display name from id
   const getUserName = (id) => {
     if (!id) return null;
     const u = storeUsers.find((usr) => usr._id === id);
     return u ? `${u.firstName || ""} ${u.lastName || ""}`.trim() : null;
   };
 
-  // Chat room: /AdminDashboard/UserDetails/:id/UserChats/:chatId/Chat
   const chatMatch = path.match(/\/AdminDashboard\/UserDetails\/([^/]+)\/UserChats\/[^/]+\/Chat/);
   if (chatMatch) {
     const name = getUserName(chatMatch[1]);
@@ -33,7 +30,6 @@ function resolvePageInfo(pathname, storeUsers) {
     };
   }
 
-  // User chats list: /AdminDashboard/UserDetails/:id/UserChats
   const userChatsMatch = path.match(/\/AdminDashboard\/UserDetails\/([^/]+)\/UserChats/);
   if (userChatsMatch) {
     const name = getUserName(userChatsMatch[1]);
@@ -47,7 +43,6 @@ function resolvePageInfo(pathname, storeUsers) {
     };
   }
 
-  // User posts: /AdminDashboard/UserDetails/:id/Posts
   const userPostsMatch = path.match(/\/AdminDashboard\/UserDetails\/([^/]+)\/Posts/);
   if (userPostsMatch) {
     const name = getUserName(userPostsMatch[1]);
@@ -61,7 +56,6 @@ function resolvePageInfo(pathname, storeUsers) {
     };
   }
 
-  // User detail: /AdminDashboard/UserDetails/:id
   const userDetailMatch = path.match(/\/AdminDashboard\/UserDetails\/([^/]+)$/);
   if (userDetailMatch) {
     const name = getUserName(userDetailMatch[1]);
@@ -74,17 +68,16 @@ function resolvePageInfo(pathname, storeUsers) {
     };
   }
 
-  // Static routes
   const STATIC = {
-    "/AdminDashboard/Profile":           { title: "Admin Profile",      crumbs: [{ label: "Profile" }] },
-    "/AdminDashboard/starter":           { title: "Dashboard",          crumbs: [{ label: "Dashboard" }] },
-    "/AdminDashboard/Users":             { title: "Users",              crumbs: [{ label: "Users" }] },
-    "/AdminDashboard/Posts":             { title: "Posts",              crumbs: [{ label: "Posts" }] },
-    "/AdminDashboard/Chats":             { title: "All Chats",          crumbs: [{ label: "Chats" }] },
-    "/AdminDashboard/BumperPost":        { title: "Pinned Posts",       crumbs: [{ label: "Pinned Posts" }] },
-    "/AdminDashboard/ReportRequests":    { title: "Report Requests",    crumbs: [{ label: "Reported" }] },
-    "/AdminDashboard/sendnotification":  { title: "Send Notification",  crumbs: [{ label: "Notification" }] },
-    "/AdminDashboard/addPartner":        { title: "Partners",           crumbs: [{ label: "Partner" }] },
+    "/AdminDashboard/Profile": { title: "Admin Profile", crumbs: [{ label: "Profile" }] },
+    "/AdminDashboard/starter": { title: "Dashboard", crumbs: [{ label: "Dashboard" }] },
+    "/AdminDashboard/Users": { title: "Users", crumbs: [{ label: "Users" }] },
+    "/AdminDashboard/Posts": { title: "Posts", crumbs: [{ label: "Posts" }] },
+    "/AdminDashboard/Chats": { title: "All Chats", crumbs: [{ label: "Chats" }] },
+    "/AdminDashboard/BumperPost": { title: "Pinned Posts", crumbs: [{ label: "Pinned Posts" }] },
+    "/AdminDashboard/ReportRequests": { title: "Report Requests", crumbs: [{ label: "Reported" }] },
+    "/AdminDashboard/sendnotification": { title: "Send Notification", crumbs: [{ label: "Notification" }] },
+    "/AdminDashboard/addPartner": { title: "Partners", crumbs: [{ label: "Partner" }] },
   };
 
   for (const [key, val] of Object.entries(STATIC)) {
@@ -100,17 +93,18 @@ const Header = () => {
   const dispatch = useDispatch();
   const adminAuth = useSelector(selectAdmin);
   const storeUsers = useSelector(selecteUsers);
+  const { profileUser, roleLabel, canAccessAdminChats } = useAdminMongoProfile();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const adminUser = storeUsers.find((u) => u._id === ADMIN_ID) || adminAuth || {};
+  const adminUser = profileUser || resolveAdminProfileUser(adminAuth, storeUsers) || adminAuth || {};
   const { title, crumbs } = resolvePageInfo(location.pathname, storeUsers);
 
   const fullName = adminUser.firstName
     ? `${adminUser.firstName} ${adminUser.lastName || ""}`.trim()
-    : "Admin";
+    : adminUser.adminemail || adminUser.email || "Admin";
   const avatarUrl = adminUser.profileImageUrl || null;
-  const email = adminUser.email || "";
+  const email = adminUser.email || adminUser.adminemail || "";
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -174,13 +168,15 @@ const Header = () => {
           <i className="bi bi-bell" />
         </button>
 
-        <Link
-          to="/Admin/AdminDashboard/Chats"
-          className={style.iconBtn}
-          title="Chats"
-        >
-          <i className="bi bi-chat-dots" />
-        </Link>
+        {canAccessAdminChats && (
+          <Link
+            to="/Admin/AdminDashboard/Chats"
+            className={style.iconBtn}
+            title="Chats"
+          >
+            <i className="bi bi-chat-dots" />
+          </Link>
+        )}
 
         <div className={style.divider} />
 
@@ -201,7 +197,7 @@ const Header = () => {
             </div>
             <div className={style.adminInfo}>
               <span className={style.adminName}>{fullName}</span>
-              <span className={style.adminRole}>Administrator</span>
+              <span className={style.adminRole}>{roleLabel}</span>
             </div>
             <i
               className={`bi bi-chevron-down ${style.chevron} ${

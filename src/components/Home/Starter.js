@@ -4,8 +4,7 @@ import TopCards from "../Cards/TopCards";
 import { useSelector } from "react-redux";
 import { selecteUsers, selectAllPinnedPosts, selectAllPosts } from "../../Store/authSlice";
 import style from "../Pages/ui.module.css";
-
-const ADMIN_ID = "658c582ff1bc8978d2300823";
+import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -38,8 +37,8 @@ const Starter = () => {
   const [approvedPosts, setApprovedPosts]     = useState(0);
   const [pendingPosts, setPendingPosts]       = useState(0);
 
-  const adminUser = storeUsers.find((u) => u._id === ADMIN_ID);
-  const adminName = adminUser?.firstName || "Admin";
+  const { profileUser: adminUser } = useAdminMongoProfile();
+  const adminName = adminUser?.firstName || adminUser?.email || "Admin";
 
   useEffect(() => {
     setSuspendedUsers(storeUsers.filter((u) => u.isSuspended).length);

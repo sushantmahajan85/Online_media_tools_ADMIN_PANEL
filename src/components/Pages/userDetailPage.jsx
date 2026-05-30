@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Col, Row } from "reactstrap";
 import { useSelector } from "react-redux";
+import axios from "axios";
 import { selecteUsers } from "../../Store/authSlice";
-import {
-  displayText,
-  formatJoiningDateTime,
-} from "../../utils/userDisplay";
+import { displayText, formatJoiningDateTime } from "../../utils/userDisplay";
+import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
 import style from "./ui.module.css";
+
+const serverURL = process.env.REACT_APP_SERVER_URL;
 
 function InfoField({ icon, label, children }) {
   return (
@@ -35,12 +36,39 @@ function InfoCard({ title, icon, children }) {
 
 export function UserDetailpage() {
   const storeUser = useSelector(selecteUsers);
+  const { canAccessAdminChats } = useAdminMongoProfile();
   const { id } = useParams();
   const [user, setUser] = useState();
+  const [loadingUser, setLoadingUser] = useState(false);
 
   useEffect(() => {
-    const current = storeUser.find((u) => u._id === id);
-    setUser(current);
+    const current = storeUser.find((u) => String(u._id) === String(id));
+    if (current) {
+      setUser(current);
+      setLoadingUser(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingUser(true);
+
+    axios
+      .get(`${serverURL}/api/users/get_all_users?ids=${encodeURIComponent(id)}`)
+      .then((res) => {
+        if (!cancelled) {
+          setUser(res.data?.users?.[0] || null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingUser(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, storeUser]);
 
   const fullName = useMemo(() => {
@@ -61,7 +89,17 @@ export function UserDetailpage() {
 
   return (
     <div className={style.udpPage}>
-      {user && (
+      {loadingUser && (
+        <div style={{ padding: "40px 32px", color: "#6b7280", textAlign: "center" }}>
+          Loading user…
+        </div>
+      )}
+      {!loadingUser && !user && (
+        <div style={{ padding: "40px 32px", color: "#6b7280", textAlign: "center" }}>
+          User not found.
+        </div>
+      )}
+      {!loadingUser && user && (
         <div className={style.udpShell}>
           <Row className="g-4 mb-4">
             <Col lg={4} md={5} xs={12}>
@@ -176,18 +214,20 @@ export function UserDetailpage() {
           </Row>
 
           <Row className="g-3 pb-4">
-            <Col xs={12} sm={6} md={4} lg={3}>
-              <Link
-                to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats`}
-                className={style.udpActionCard}
-              >
-                <div className={`${style.udpActionIcon} ${style.udpActionIconChats}`}>
-                  <img src="/chats.png" alt="" width={28} height={28} />
-                </div>
-                <span className={style.udpActionLabel}>Chats</span>
-                <span className={`bi bi-arrow-right-short ${style.udpActionArrow}`} />
-              </Link>
-            </Col>
+            {canAccessAdminChats && (
+              <Col xs={12} sm={6} md={4} lg={3}>
+                <Link
+                  to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats`}
+                  className={style.udpActionCard}
+                >
+                  <div className={`${style.udpActionIcon} ${style.udpActionIconChats}`}>
+                    <img src="/chats.png" alt="" width={28} height={28} />
+                  </div>
+                  <span className={style.udpActionLabel}>Chats</span>
+                  <span className={`bi bi-arrow-right-short ${style.udpActionArrow}`} />
+                </Link>
+              </Col>
+            )}
             <Col xs={12} sm={6} md={4} lg={3}>
               <Link
                 to={`/Admin/AdminDashboard/UserDetails/${id}/Posts`}

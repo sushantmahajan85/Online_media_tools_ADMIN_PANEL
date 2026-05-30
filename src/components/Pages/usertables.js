@@ -5,14 +5,17 @@ import { useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Button, CardBody, Input, Table } from "reactstrap";
-import { selecteUsers } from "../../Store/authSlice";
+import { selecteUsers, selectAdmin } from "../../Store/authSlice";
 import { displayText, formatJoiningDate } from "../../utils/userDisplay";
+import { getAdminMongoUserId } from "../../utils/adminProfile";
+import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
+import { PRIMARY_SUPPORT_ADMIN_ID } from "../../constants/admin";
 import { DeleteModel } from "./DeleteModel";
 import style from "./ui.module.css";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 
-const EXCLUDED_ADMIN_ID = "658c582ff1bc8978d2300823";
+const EXCLUDED_ADMIN_ID = PRIMARY_SUPPORT_ADMIN_ID;
 
 function userDisplayName(tdata) {
   if (tdata.firstName || tdata.lastName) {
@@ -23,6 +26,9 @@ function userDisplayName(tdata) {
 
 const ProjectTables = () => {
   const storeUsers = useSelector(selecteUsers);
+  const adminAuth = useSelector(selectAdmin);
+  const { canAccessAdminChats } = useAdminMongoProfile();
+  const activeAdminId = getAdminMongoUserId(adminAuth) || EXCLUDED_ADMIN_ID;
   const [deltedId, setDeletedId] = useState();
   const [deleteWhatUsers, setdeleteWhatUsers] = useState("");
   const [pContent, setpContent] = useState();
@@ -61,10 +67,10 @@ const ProjectTables = () => {
   }, [currentData, searchQuery]);
 
   async function handleUserChat(userId) {
-    const chatRoomUsers = [EXCLUDED_ADMIN_ID, userId].sort();
+    const chatRoomUsers = [activeAdminId, userId].sort();
     const chatRoomId = chatRoomUsers.join("_");
     navigate(
-      `/Admin/AdminDashboard/UserDetails/${EXCLUDED_ADMIN_ID}/UserChats/${chatRoomId}/Chat`,
+      `/Admin/AdminDashboard/UserDetails/${activeAdminId}/UserChats/${chatRoomId}/Chat`,
     );
   }
 
@@ -130,7 +136,7 @@ const ProjectTables = () => {
               <col className={style.usersColDevice} />
               <col className={style.usersColJoined} />
               <col className={style.usersColAction} />
-              <col className={style.usersColChat} />
+              {canAccessAdminChats && <col className={style.usersColChat} />}
               <col className={style.usersColSuspend} />
             </colgroup>
             <thead>
@@ -144,7 +150,9 @@ const ProjectTables = () => {
                 <th>Device</th>
                 <th>Joined</th>
                 <th className={style.usersActionCol}>Del</th>
-                <th className={style.usersChatCol}>Chat</th>
+                {canAccessAdminChats && (
+                  <th className={style.usersChatCol}>Chat</th>
+                )}
                 <th className={style.usersSuspendCol}>Status</th>
               </tr>
             </thead>
@@ -257,20 +265,22 @@ const ProjectTables = () => {
                   </td>
 
                   {/* Chat */}
-                  <td className={`${style.usersChatCol} ${style.usersTableActions}`}>
-                    {tdata.isverified ? (
-                      <button
-                        type="button"
-                        className={style.usersIconBtnChat}
-                        aria-label="Open chat"
-                        onClick={() => handleUserChat(tdata._id)}
-                      >
-                        <i className="bi bi-chat-dots-fill" />
-                      </button>
-                    ) : (
-                      <span className={style.usersCellMuted}>—</span>
-                    )}
-                  </td>
+                  {canAccessAdminChats && (
+                    <td className={`${style.usersChatCol} ${style.usersTableActions}`}>
+                      {tdata.isverified ? (
+                        <button
+                          type="button"
+                          className={style.usersIconBtnChat}
+                          aria-label="Open chat"
+                          onClick={() => handleUserChat(tdata._id)}
+                        >
+                          <i className="bi bi-chat-dots-fill" />
+                        </button>
+                      ) : (
+                        <span className={style.usersCellMuted}>—</span>
+                      )}
+                    </td>
+                  )}
 
                   {/* Suspend */}
                   <td className={`${style.usersSuspendCol} ${style.usersTableActions}`}>

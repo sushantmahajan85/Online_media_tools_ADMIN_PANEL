@@ -3,21 +3,40 @@ import style from "./ui.module.css";
 import { useParams } from "react-router-dom";
 import { db } from "../../firebase";
 import { collection, getDocs, onSnapshot, addDoc, Timestamp, updateDoc, doc, serverTimestamp, setDoc, getDoc } from "firebase/firestore";
-import { selecteUsers } from "../../Store/authSlice";
+import { selecteUsers, selectAdmin } from "../../Store/authSlice";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import axios from "axios";
+import {
+  getAdminChatParticipantId,
+  isAdminChatParticipant,
+} from "../../utils/adminProfile";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
+
+function getChatParticipantIds(chatId, chatData) {
+  if (Array.isArray(chatData?.users) && chatData.users.length >= 2) {
+    return chatData.users.map(String);
+  }
+  return chatId.split("_").filter(Boolean).map(String);
+}
 
 export function Chat() {
     const { id, chatId } = useParams();
     const [currentChat, SetCurrentChat] = useState();
     const [currentMessages, setCurrentMessages] = useState([]);
-    const storeUser = useSelector(selecteUsers);
     const [message, setMessage] = useState("");
-    const adminId = "658c582ff1bc8978d2300823";
-    const otherUserId = chatId.split("_").find((uid) => uid !== adminId);
+    const storeUser = useSelector(selecteUsers);
+    const adminAuth = useSelector(selectAdmin);
+    const participantIds = getChatParticipantIds(chatId, currentChat);
+    const canSendMessages = isAdminChatParticipant(adminAuth, participantIds);
+    const activeAdminParticipantId = getAdminChatParticipantId(
+        adminAuth,
+        participantIds,
+    );
+    const otherUserId = participantIds.find(
+        (uid) => String(uid) !== String(activeAdminParticipantId),
+    );
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -57,9 +76,27 @@ export function Chat() {
                     const querySnapshot = await getDocs(chatRoomDocRef);
                     const chatRoomDoc = querySnapshot.docs.find((d) => d.id === chatId);
                     if (chatRoomDoc) {
-                        const uid = chatId.split("_").find((userid) => userid !== id);
-                        const user = storeUser.find((u) => u._id === uid);
-                        SetCurrentChat({ ...chatRoomDoc.data(), user });
+                        const chatData = chatRoomDoc.data();
+                        const ids = getChatParticipantIds(chatId, chatData);
+                        const isParticipant = isAdminChatParticipant(
+                            adminAuth,
+                            ids,
+                        );
+                        const adminInChat = getAdminChatParticipantId(
+                            adminAuth,
+                            ids,
+                        );
+                        const displayUserId = isParticipant
+                            ? ids.find(
+                                  (uid) => String(uid) !== String(adminInChat),
+                              )
+                            : ids.find((uid) => String(uid) !== String(id)) ||
+                              ids[1] ||
+                              ids[0];
+                        const user = storeUser.find(
+                            (u) => String(u._id) === String(displayUserId),
+                        );
+                        SetCurrentChat({ ...chatData, user, participants: ids });
                     } else {
                         toast.info("Chat Room document not found");
                     }
@@ -72,11 +109,11 @@ export function Chat() {
         fetchData();
         const unsub = fetchMessages();
         return () => unsub();
-    }, [chatId, storeUser, id]);
+    }, [chatId, storeUser, id, adminAuth]);
 
     async function sendMessage(e) {
         e.preventDefault();
-        if (!message.trim()) return;
+        if (!canSendMessages || !message.trim() || !activeAdminParticipantId || !otherUserId) return;
         try {
             const chatDocRef = doc(db, "chats", chatId);
             const chatDoc = await getDoc(chatDocRef);
@@ -84,14 +121,16 @@ export function Chat() {
                 const newChat = {
                     chatRoomId: chatId,
                     isRequested: "accepted",
-                    users: [adminId, otherUserId],
+                    users: [activeAdminParticipantId, otherUserId],
                     timestamp: serverTimestamp(),
                     unreadCountFrom: 0,
                     unreadCountTo: 0,
                 };
                 await setDoc(chatDocRef, newChat);
                 const newCreatedChat = await getDoc(chatDocRef);
-                const user = storeUser.find((u) => u._id === otherUserId);
+                const user = storeUser.find(
+                    (u) => String(u._id) === String(otherUserId),
+                );
                 SetCurrentChat({ ...newCreatedChat.data(), user });
             }
             const newMessage = {
@@ -100,14 +139,22 @@ export function Chat() {
                 imageUrl: null,
                 timestamp: Timestamp.fromDate(new Date()),
                 receiverId: otherUserId,
-                senderId: adminId,
+                senderId: activeAdminParticipantId,
                 message,
             };
             const messagesCollectionRef = collection(db, "chats", chatId, "messages");
             await addDoc(messagesCollectionRef, newMessage);
-            await updateDoc(chatDocRef, { lastMessage: message, receiverId: otherUserId, senderId: adminId });
+            await updateDoc(chatDocRef, {
+                lastMessage: message,
+                receiverId: otherUserId,
+                senderId: activeAdminParticipantId,
+            });
             axios
-                .post(`${serverURL}/api/notification/chat`, { message, receiverId: otherUserId, senderId: adminId })
+                .post(`${serverURL}/api/notification/chat`, {
+                    message,
+                    receiverId: otherUserId,
+                    senderId: activeAdminParticipantId,
+                })
                 .catch((err) => console.log(err));
         } catch (error) {
             console.log(error);
@@ -144,10 +191,26 @@ export function Chat() {
         groupedMessages.push({ type: "message", ...msg });
     });
 
-    const contactName = currentChat?.user
-        ? `${currentChat.user.firstName || ""} ${currentChat.user.lastName || ""}`.trim()
-        : "";
-    const avatarUrl = currentChat?.user?.profileImageUrl;
+    const contactName = (() => {
+        if (canSendMessages && currentChat?.user) {
+            return `${currentChat.user.firstName || ""} ${currentChat.user.lastName || ""}`.trim();
+        }
+        if (!canSendMessages && participantIds.length >= 2) {
+            const names = participantIds
+                .map((pid) => {
+                    const u = storeUser.find((usr) => String(usr._id) === String(pid));
+                    if (!u) return null;
+                    return `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
+                })
+                .filter(Boolean);
+            if (names.length >= 2) return `${names[0]} ↔ ${names[1]}`;
+        }
+        if (currentChat?.user) {
+            return `${currentChat.user.firstName || ""} ${currentChat.user.lastName || ""}`.trim();
+        }
+        return "";
+    })();
+    const avatarUrl = canSendMessages ? currentChat?.user?.profileImageUrl : null;
 
     return (
         <div className={style.waContainer}>
@@ -169,14 +232,6 @@ export function Chat() {
                         )}
                     </div>
                 </div>
-                <div className={style.waHeaderActions}>
-                    <button className={style.waHeaderBtn} title="Search" type="button">
-                        <i className="bi bi-search" />
-                    </button>
-                    <button className={style.waHeaderBtn} title="More options" type="button">
-                        <i className="bi bi-three-dots-vertical" />
-                    </button>
-                </div>
             </div>
 
             <div className={style.waMessages}>
@@ -190,14 +245,21 @@ export function Chat() {
                                     </div>
                                 );
                             }
-                            const isSent = item.senderId === adminId;
+                            const isSent = canSendMessages
+                                ? String(item.senderId) ===
+                                  String(activeAdminParticipantId)
+                                : String(item.senderId) === String(participantIds[1]);
+                            const senderUser = storeUser.find(
+                                (u) => String(u._id) === String(item.senderId),
+                            );
+                            const msgAvatarUrl = senderUser?.profileImageUrl;
                             return (
                                 <div
                                     key={index}
                                     className={`${style.waMsgRow} ${isSent ? style.waMsgRowSent : style.waMsgRowReceived}`}
                                 >
-                                    {!isSent && avatarUrl && (
-                                        <img src={avatarUrl} alt="avatar" className={style.waMsgAvatar} />
+                                    {!isSent && msgAvatarUrl && (
+                                        <img src={msgAvatarUrl} alt="avatar" className={style.waMsgAvatar} />
                                     )}
                                     <div className={`${style.waBubble} ${isSent ? style.waBubbleSent : style.waBubbleReceived}`}>
                                         {item.imageUrl ? (
@@ -227,7 +289,7 @@ export function Chat() {
                 )}
             </div>
 
-            {adminId === id && (
+            {canSendMessages && (
                 <div className={style.waInputBar}>
                     <form onSubmit={sendMessage} className={style.waInputForm}>
                         <button type="button" className={style.waInputIcon}>

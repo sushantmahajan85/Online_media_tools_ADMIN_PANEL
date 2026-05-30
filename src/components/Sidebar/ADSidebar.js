@@ -1,44 +1,43 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import style from "./sidebar.module.css";
-import { useDispatch, useSelector } from "react-redux";
-import { logout, selecteUsers } from "../../Store/authSlice";
+import { useDispatch } from "react-redux";
+import { logout } from "../../Store/authSlice";
 import { toast } from "react-toastify";
-
-const ADMIN_ID = "658c582ff1bc8978d2300823";
+import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
 
 const NAV_GROUPS = [
   {
     label: "Overview",
     items: [
-      { to: "/Admin/AdminDashboard/starter",          icon: "bi-speedometer2",      label: "Dashboard" },
+      { to: "/Admin/AdminDashboard/starter", icon: "bi-speedometer2", label: "Dashboard" },
     ],
   },
   {
     label: "Content",
     items: [
-      { to: "/Admin/AdminDashboard/Posts",            icon: "bi-file-earmark-text", label: "Posts" },
-      { to: "/Admin/AdminDashboard/BumperPost",       icon: "bi-pin-angle",         label: "Pinned Posts" },
+      { to: "/Admin/AdminDashboard/Posts", icon: "bi-file-earmark-text", label: "Posts" },
+      { to: "/Admin/AdminDashboard/BumperPost", icon: "bi-pin-angle", label: "Pinned Posts" },
     ],
   },
   {
     label: "Users",
     items: [
-      { to: "/Admin/AdminDashboard/Users",            icon: "bi-people",            label: "Users" },
-      { to: "/Admin/AdminDashboard/ReportRequests",   icon: "bi-flag",              label: "Report Requests" },
+      { to: "/Admin/AdminDashboard/Users", icon: "bi-people", label: "Users" },
+      { to: "/Admin/AdminDashboard/ReportRequests", icon: "bi-flag", label: "Report Requests" },
     ],
   },
   {
     label: "Communication",
     items: [
-      { to: "/Admin/AdminDashboard/Chats",            icon: "bi-chat-dots",         label: "All Chats" },
-      { to: "/Admin/AdminDashboard/sendnotification", icon: "bi-bell",              label: "Send Notification" },
+      { to: "/Admin/AdminDashboard/Chats", icon: "bi-chat-dots", label: "All Chats" },
+      { to: "/Admin/AdminDashboard/sendnotification", icon: "bi-bell", label: "Send Notification" },
     ],
   },
   {
     label: "Settings",
     items: [
-      { to: "/Admin/AdminDashboard/addPartner",       icon: "bi-briefcase",         label: "Partners" },
-      { to: "/Admin/AdminDashboard/Profile",          icon: "bi-person-circle",     label: "My Profile" },
+      { to: "/Admin/AdminDashboard/addPartner", icon: "bi-briefcase", label: "Partners" },
+      { to: "/Admin/AdminDashboard/Profile", icon: "bi-person-circle", label: "My Profile" },
     ],
   },
 ];
@@ -47,15 +46,21 @@ const Sidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const storeUsers = useSelector(selecteUsers);
+  const { profileUser: adminUser, roleLabel, canAccessAdminChats } = useAdminMongoProfile();
 
-  const adminUser = storeUsers.find((u) => u._id === ADMIN_ID);
   const fullName = adminUser
-    ? `${adminUser.firstName || ""} ${adminUser.lastName || ""}`.trim()
+    ? `${adminUser.firstName || ""} ${adminUser.lastName || ""}`.trim() ||
+      adminUser.email ||
+      "Admin"
     : "Admin";
   const avatarUrl = adminUser?.profileImageUrl;
-  const initials = fullName
-    .split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "A";
+  const initials =
+    fullName
+      .split(" ")
+      .map((p) => p[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "A";
 
   const showMobilemenu = () => {
     document.getElementById("sidebarArea").classList.toggle("showSidebar");
@@ -73,7 +78,6 @@ const Sidebar = () => {
 
   return (
     <div className={style.sidebar}>
-      {/* Logo / Brand */}
       <div className={style.brand}>
         <div className={style.brandIcon}>
           <i className="bi bi-hexagon-fill" />
@@ -98,7 +102,6 @@ const Sidebar = () => {
         </button>
       </div>
 
-      {/* Admin profile chip */}
       <Link to="/Admin/AdminDashboard/Profile" className={style.profileChip}>
         <div className={style.profileAvatar}>
           {avatarUrl ? (
@@ -109,17 +112,23 @@ const Sidebar = () => {
         </div>
         <div className={style.profileInfo}>
           <span className={style.profileName}>{fullName}</span>
-          <span className={style.profileRole}>Administrator</span>
+          <span className={style.profileRole}>{roleLabel}</span>
         </div>
         <i className="bi bi-chevron-right" style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0 }} />
       </Link>
 
-      {/* Nav */}
       <nav className={style.nav}>
-        {NAV_GROUPS.map((group) => (
+        {NAV_GROUPS.map((group) => {
+          const items = group.items.filter(
+            (item) =>
+              canAccessAdminChats ||
+              item.to !== "/Admin/AdminDashboard/Chats",
+          );
+          if (items.length === 0) return null;
+          return (
           <div key={group.label} className={style.navGroup}>
             <span className={style.navGroupLabel}>{group.label}</span>
-            {group.items.map((item) => (
+            {items.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -131,10 +140,10 @@ const Sidebar = () => {
               </Link>
             ))}
           </div>
-        ))}
+          );
+        })}
       </nav>
 
-      {/* Footer: Logout */}
       <div className={style.footer}>
         <button className={style.logoutBtn} onClick={handleLogout} type="button">
           <i className="bi bi-box-arrow-left" />
