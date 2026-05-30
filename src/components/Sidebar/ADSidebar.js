@@ -1,258 +1,144 @@
-import { Button, Nav, NavItem } from "reactstrap";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import style from "./sidebar.module.css";
-import { useDispatch } from "react-redux";
-import { logout } from "../../Store/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { logout, selecteUsers } from "../../Store/authSlice";
 import { toast } from "react-toastify";
+
+const ADMIN_ID = "658c582ff1bc8978d2300823";
+
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [
+      { to: "/Admin/AdminDashboard/starter",          icon: "bi-speedometer2",      label: "Dashboard" },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { to: "/Admin/AdminDashboard/Posts",            icon: "bi-file-earmark-text", label: "Posts" },
+      { to: "/Admin/AdminDashboard/BumperPost",       icon: "bi-pin-angle",         label: "Pinned Posts" },
+    ],
+  },
+  {
+    label: "Users",
+    items: [
+      { to: "/Admin/AdminDashboard/Users",            icon: "bi-people",            label: "Users" },
+      { to: "/Admin/AdminDashboard/ReportRequests",   icon: "bi-flag",              label: "Report Requests" },
+    ],
+  },
+  {
+    label: "Communication",
+    items: [
+      { to: "/Admin/AdminDashboard/Chats",            icon: "bi-chat-dots",         label: "All Chats" },
+      { to: "/Admin/AdminDashboard/sendnotification", icon: "bi-bell",              label: "Send Notification" },
+    ],
+  },
+  {
+    label: "Settings",
+    items: [
+      { to: "/Admin/AdminDashboard/addPartner",       icon: "bi-briefcase",         label: "Partners" },
+      { to: "/Admin/AdminDashboard/Profile",          icon: "bi-person-circle",     label: "My Profile" },
+    ],
+  },
+];
 
 const Sidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const storeUsers = useSelector(selecteUsers);
+
+  const adminUser = storeUsers.find((u) => u._id === ADMIN_ID);
+  const fullName = adminUser
+    ? `${adminUser.firstName || ""} ${adminUser.lastName || ""}`.trim()
+    : "Admin";
+  const avatarUrl = adminUser?.profileImageUrl;
+  const initials = fullName
+    .split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "A";
 
   const showMobilemenu = () => {
     document.getElementById("sidebarArea").classList.toggle("showSidebar");
   };
-  let location = useLocation();
+
+  const handleLogout = () => {
+    dispatch(logout());
+    localStorage.removeItem("OMB_ADMIN_DATA");
+    toast.success("Logged out");
+    navigate("/");
+  };
+
+  const isActive = (to) =>
+    location.pathname === to || location.pathname.startsWith(to + "/");
 
   return (
-    <div
-      style={{ height: "100vh", zIndex: "14000" }}
-      className={` position-relative ${style.SidebarContainer} `}
-    >
-      <div
-        className={`d-flex shadow  text-light py-2 align-items-center ${style.sidebar} `}
-      >
-        <h2 className="px-2">Admin</h2>
-        <Button
-          close
-          size="sm"
-          color="light"
-          className="ms-auto d-lg-none  text-light "
-          onClick={() => showMobilemenu()}
-        ></Button>
-      </div>
-
-      <div className={`${style.sideBarContainer} `}>
-        <div className={`${style.heightScroll} pt-3 `}>
-          <Nav vertical className="sidebarNav">
-            <NavItem>
-              <strong> Admin </strong>{" "}
-            </NavItem>
-            <NavItem className="sidenav-bg">
-              <Link
-                to={"/Admin/AdminDashboard/Profile"}
-                className={
-                  location.pathname === "/Admin/AdminDashboard/"
-                    ? " text-primary bg-light fw-bold nav-link py-3 color"
-                    : "nav-link text-secondary py-3"
-                }
-              >
-                {/* <i className="bi bi-speedometer2"></i> */}
-                <img
-                  src={"/profile.png"}
-                  width={"20px"}
-                  height={"20px"}
-                  alt="img"
-                />
-
-                <span className="ms-3 d-inline-block">Profile</span>
-              </Link>
-            </NavItem>
-
-            <NavItem className="sidenav-bg">
-              <Link
-                to={"/Admin/AdminDashboard/Chats"}
-                className={
-                  location.pathname === "/Admin/AdminDashboard/"
-                    ? " text-primary bg-light fw-bold py-0 nav-linkcolor"
-                    : "nav-link text-secondary py-0 pb-3"
-                }
-              >
-                {/* <i className="bi bi-speedometer2"></i> */}
-                <img
-                  src={"/chats.png"}
-                  width={"20px"}
-                  height={"20px"}
-                  alt="img"
-                />
-
-                <span className="ms-3 d-inline-block">Chats</span>
-              </Link>
-            </NavItem>
-
-            <NavItem>
-              <strong> Home </strong>{" "}
-            </NavItem>
-            <NavItem className="sidenav-bg">
-              <Link
-                to={"/Admin/AdminDashboard/starter"}
-                className={
-                  location.pathname === "/Admin/AdminDashboard/starter"
-                    ? " text-primary bg-light fw-bold nav-link py-3 color"
-                    : "nav-link text-secondary py-3"
-                }
-              >
-                {/* <i className="bi bi-speedometer2"></i> */}
-                <img
-                  src={"/dashboard.png"}
-                  width={"20px"}
-                  height={"20px"}
-                  alt="img"
-                />
-
-                <span className="ms-3 d-inline-block">Dashboard</span>
-              </Link>
-            </NavItem>
-
-            <NavItem>
-              <strong> User </strong>{" "}
-            </NavItem>
-            <NavItem className="sidenav-bg">
-              <Link
-                to={"/Admin/AdminDashboard/Users"}
-                className={
-                  location.pathname === "/Admin/AdminDashboard/Users"
-                    ? " text-primary bg-light fw-bold nav-link py-3 color"
-                    : "nav-link text-secondary py-3"
-                }
-              >
-                <img
-                  src={"/users.png"}
-                  width={"20px"}
-                  height={"20px"}
-                  alt="img"
-                />
-
-                <span className="ms-3 d-inline-block">Users</span>
-              </Link>
-            </NavItem>
-            <NavItem>
-              <strong> Posts </strong>{" "}
-            </NavItem>
-            <NavItem className="sidenav-bg">
-              <Link
-                to={"/Admin/AdminDashboard/Posts"}
-                className={
-                  location.pathname === "/Admin/AdminDashboard/Posts"
-                    ? " text-primary bg-light fw-bold nav-link py-3 color"
-                    : "nav-link text-secondary py-3"
-                }
-              >
-                <img
-                  src={"/posts.png"}
-                  width={"20px"}
-                  height={"20px"}
-                  alt="img"
-                />
-
-                <span className="ms-3 d-inline-block">Posts</span>
-              </Link>
-            </NavItem>
-
-            <NavItem>
-              <strong> BumperPost </strong>{" "}
-            </NavItem>
-            <NavItem className="sidenav-bg">
-              <Link
-                to={"/Admin/AdminDashboard/BumperPost"}
-                className={
-                  location.pathname === "/Admin/AdminDashboard/BumperPost"
-                    ? " text-primary bg-light fw-bold nav-link py-3 color"
-                    : "nav-link text-secondary py-3"
-                }
-              >
-                <img
-                  src={"/bumperPost.png"}
-                  width={"20px"}
-                  height={"20px"}
-                  alt="img"
-                />
-
-                <span className="ms-3 d-inline-block">Pinned Posts</span>
-              </Link>
-            </NavItem>
-            <NavItem>
-              <strong> Reported </strong>{" "}
-            </NavItem>
-            <NavItem className="sidenav-bg">
-              <Link
-                to={"/Admin/AdminDashboard/ReportRequests"}
-                className={
-                  location.pathname === "/Admin/AdminDashboard/ReportRequests"
-                    ? " text-primary bg-light fw-bold nav-link py-3 color"
-                    : "nav-link text-secondary py-3"
-                }
-              >
-                <img
-                  src={"/bumperPost.png"}
-                  width={"20px"}
-                  height={"20px"}
-                  alt="img"
-                />
-
-                <span className="ms-3 d-inline-block">Report Requests</span>
-              </Link>
-            </NavItem>
-            <NavItem>
-              <strong> Notification </strong>{" "}
-            </NavItem>
-            <NavItem className="sidenav-bg">
-              <Link
-                to={"/Admin/AdminDashboard/sendnotification"}
-                className={
-                  location.pathname === "/Admin/AdminDashboard/sendnotification"
-                    ? " text-primary bg-light fw-bold nav-link py-3 color"
-                    : "nav-link text-secondary py-3"
-                }
-              >
-                <img
-                  src={"/posts.png"}
-                  width={"20px"}
-                  height={"20px"}
-                  alt="img"
-                />
-
-                <span className="ms-3 d-inline-block">Send Notification</span>
-              </Link>
-            </NavItem>
-            <NavItem>
-              <strong> Partner </strong>{" "}
-            </NavItem>
-            <NavItem className="sidenav-bg">
-              <Link
-                to={"/Admin/AdminDashboard/addPartner"}
-                className={
-                  location.pathname === "/Admin/AdminDashboard/addPartner"
-                    ? " text-primary bg-light fw-bold nav-link py-3 color"
-                    : "nav-link text-secondary py-3"
-                }
-              >
-                <img
-                  src={"/posts.png"}
-                  width={"20px"}
-                  height={"20px"}
-                  alt="img"
-                />
-
-                <span className="ms-3 d-inline-block">Partners</span>
-              </Link>
-            </NavItem>
-          </Nav>
+    <div className={style.sidebar}>
+      {/* Logo / Brand */}
+      <div className={style.brand}>
+        <div className={style.brandIcon}>
+          <i className="bi bi-hexagon-fill" />
         </div>
+        <span className={style.brandName}>AdminPanel</span>
+        <button
+          className={style.backIconBtn}
+          onClick={() => navigate(-1)}
+          type="button"
+          aria-label="Go back"
+          title="Go back"
+        >
+          <i className="bi bi-arrow-left" />
+        </button>
+        <button
+          className={`${style.closeBtn} d-lg-none`}
+          onClick={showMobilemenu}
+          type="button"
+          aria-label="Close sidebar"
+        >
+          <i className="bi bi-x-lg" />
+        </button>
       </div>
 
-      <div className={style.buttonLogoutDiv}>
-        <button
-          onClick={() => {
-            dispatch(logout());
-            localStorage.removeItem("OMB_ADMIN_DATA");
-            toast.success("Log Out");
-            navigate("/");
-          }}
-          className={`sidenav-bg  ${style.logoutButton}`}
-        >
-          <i className="bi bi-box-arrow-left"></i>
-          <span className="ms-3 d-inline-block fw-bold">LogOut</span>
+      {/* Admin profile chip */}
+      <Link to="/Admin/AdminDashboard/Profile" className={style.profileChip}>
+        <div className={style.profileAvatar}>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={fullName} className={style.profileAvatarImg} />
+          ) : (
+            <span className={style.profileAvatarFallback}>{initials}</span>
+          )}
+        </div>
+        <div className={style.profileInfo}>
+          <span className={style.profileName}>{fullName}</span>
+          <span className={style.profileRole}>Administrator</span>
+        </div>
+        <i className="bi bi-chevron-right" style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0 }} />
+      </Link>
+
+      {/* Nav */}
+      <nav className={style.nav}>
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label} className={style.navGroup}>
+            <span className={style.navGroupLabel}>{group.label}</span>
+            {group.items.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`${style.navItem} ${isActive(item.to) ? style.navItemActive : ""}`}
+              >
+                <i className={`bi ${item.icon} ${style.navIcon}`} />
+                <span className={style.navLabel}>{item.label}</span>
+                {isActive(item.to) && <span className={style.navActiveBar} />}
+              </Link>
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      {/* Footer: Logout */}
+      <div className={style.footer}>
+        <button className={style.logoutBtn} onClick={handleLogout} type="button">
+          <i className="bi bi-box-arrow-left" />
+          <span>Log Out</span>
         </button>
       </div>
     </div>

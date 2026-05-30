@@ -1,207 +1,209 @@
-import React, { useEffect, useState } from "react";
-import { Button, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
+import React, { useEffect, useRef, useState } from "react";
+import { Modal } from "reactstrap";
 import { Loader } from "../Loader/loader";
 import { useDispatch } from "react-redux";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { updatePost } from "../../Store/authSlice";
 import imageCompression from "browser-image-compression";
+import style from "./ui.module.css";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 
-export function EditPost(props) {
+const TAG_OPTIONS = [
+  { value: "", label: "None" },
+  { value: "buy", label: "Buy" },
+  { value: "sell", label: "Sell" },
+];
+
+export function EditPost({ modalEdit, postData, setmodalEdit }) {
   const dispatch = useDispatch();
-  const [NewPost, setNewPost] = useState();
-  const [Myfile, setMyfile] = useState("");
+  const [newPost, setNewPost] = useState(null);
+  const [myFile, setMyFile] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [loading, setloading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
-    setNewPost(props.postData);
-  }, [props.postData]);
-  const toggle = () => props.setmodalEdit(!props.modalEdit);
+    setNewPost(postData || null);
+    setMyFile(null);
+    setPreview(null);
+  }, [postData]);
 
-  const handelSubmit = async (e) => {
+  const toggle = () => setmodalEdit(!modalEdit);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setMyFile(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // // console.log("aya")
     toggle();
     setloading(true);
-    //  // console.log(Myfile);
 
     const formData = new FormData();
-    formData.append("postContent", NewPost.postContent);
-    formData.append("postDescription", NewPost.postDescription);
-    formData.append("tag", NewPost.tag);
-    if (Myfile) {
-      const options = {
+    formData.append("postContent", newPost.postContent);
+    formData.append("postDescription", newPost.postDescription || "");
+    formData.append("tag", newPost.tag || "");
+
+    if (myFile) {
+      const compressed = await imageCompression(myFile, {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
         useWebWorker: true,
-      };
-      const compressedFile = await imageCompression(Myfile, options);
-      // // console.log(compressedFile);
-      formData.append("postMedia", compressedFile);
+      });
+      formData.append("postMedia", compressed);
     }
-    // formData.append("PostCreated", NewPost.PostCreated)
-    try {
-      let response = await axios.post(
-        `${serverURL}/api/posts/${NewPost._id}/edit_post`,
-        formData
-      );
 
-      if (response && response.status === 200) {
-        setloading(false);
-        toast.success(response.data.message);
-        // // console.log(response.data.updatedPost);
-        dispatch(updatePost(response.data.updatedPost));
+    try {
+      const res = await axios.post(`${serverURL}/api/posts/${newPost._id}/edit_post`, formData);
+      if (res?.status === 200) {
+        toast.success(res.data.message);
+        dispatch(updatePost(res.data.updatedPost));
       }
-    } catch (error) {
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update post");
+    } finally {
       setloading(false);
-      if (error) {
-        if (error.response) {
-          // // console.log(error.response.data);
-          // // console.log(error.response.status);
-          toast.error(error.response.data.message);
-        } else {
-          toast.error("Failed to Update Post ");
-        }
-      }
+      setNewPost(null);
     }
-    setNewPost("");
   };
+
   return (
     <>
-      <div>
-        <Modal
-          centered
-          zIndex={105000}
-          isOpen={props.modalEdit}
-          toggle={toggle}
-        >
-          {NewPost ? (
-            <div>
-              <ModalHeader toggle={props.toggleEdit}>
-                {" "}
-                <span className="fw-bold">Edit Post</span>
-              </ModalHeader>
-              <ModalBody>
-                <form onSubmit={handelSubmit}>
-                  <div className=" p-1 col">
-                    <div className="my-2  fw-bolder">
-                      <label htmlFor="postMedia">Post Media</label>
-                    </div>
-                    <input
-                      type="file"
-                      onChange={(e) => {
-                        setMyfile(e.target.files[0]);
-                      }}
-                      style={{
-                        width: "100%",
-                        boxShadow: ` 3px 3px 4px rgba(0, 0, 0, 0.2)`,
-                      }}
-                      className=" rounded p-1 "
-                      name="postMedia"
-                      id="postMedia"
-                    />
-                  </div>
-
-                  {/* <div style={{ width: "100%" }} className='  p-1'>
-                                <div className='my-2 fw-bolder'>
-                                    <label htmlFor="PostCreated">Post Created</label>
-                                </div>
-                                <input required type="text" value={NewPost.PostCreated} onChange={(e) => {
-                                    setNewPost((pre) => ({ ...pre, PostCreated: e.target.value }))
-                                }} style={{ width: "100%", boxShadow: ` 3px 3px 4px rgba(0, 0, 0, 0.2)` }} className=' rounded p-1 ' name='PostCreated' id='PostCreated' />
-                            </div> */}
-
-                  <div className="col p-1">
-                    <div className="my-2 fw-bolder ">
-                      <label htmlFor="postContent">Post Content</label>
-                    </div>
-                    <textarea
-                      required
-                      name="postContent"
-                      onChange={(e) => {
-                        setNewPost((pre) => ({
-                          ...pre,
-                          postContent: e.target.value,
-                        }));
-                      }}
-                      value={NewPost.postContent}
-                      id="postContent"
-                      rows="3"
-                      style={{
-                        width: "100%",
-                        boxShadow: ` 3px 3px 4px rgba(0, 0, 0, 0.2)`,
-                      }}
-                      className="border-0 rounded p-1 "
-                    />
-                    {/* <input type="t" placeholder='' name='postContent' id='postContent' /> */}
-                  </div>
-                  {/* <div className="col p-1">
-                    <div className="my-2 fw-bolder ">
-                      <label htmlFor="postDescription">Post Description</label>
-                    </div>
-                    <textarea
-                      name="postDescription"
-                      onChange={(e) => {
-                        setNewPost((pre) => ({
-                          ...pre,
-                          postDescription: e.target.value,
-                        }));
-                      }}
-                      value={NewPost.postDescription}
-                      id="postContent"
-                      rows="3"
-                      style={{
-                        width: "100%",
-                        boxShadow: ` 3px 3px 4px rgba(0, 0, 0, 0.2)`,
-                      }}
-                      className="border-0 rounded p-1 "
-                    />
-                    
-                  </div> */}
-                  <div className="col p-1">
-                    <div className="my-2 fw-bolder ">
-                      <label htmlFor="postDescription">
-                        Tag (options - blank, buy or sell)
-                      </label>
-                    </div>
-                    <input
-                      name="tag"
-                      onChange={(e) => {
-                        setNewPost((pre) => ({
-                          ...pre,
-                          tag: e.target.value.toString().toLowerCase(),
-                        }));
-                      }}
-                      value={NewPost.tag}
-                      id="tag"
-                      rows="3"
-                      style={{
-                        width: "100%",
-                        boxShadow: ` 3px 3px 4px rgba(0, 0, 0, 0.2)`,
-                      }}
-                      className="border-0 rounded p-1 "
-                    />
-                    {/* <input type="t" placeholder='' name='postContent' id='postContent' /> */}
-                  </div>
-                  <ModalFooter>
-                    <Button color="light" onClick={toggle}>
-                      Cancel
-                    </Button>{" "}
-                    <Button type="submit" color="success">
-                      Update
-                    </Button>
-                  </ModalFooter>
-                </form>
-              </ModalBody>
+      <Modal centered zIndex={105000} isOpen={modalEdit} toggle={toggle}>
+        <div className={style.epModal}>
+          {/* Header */}
+          <div className={style.epHeader}>
+            <div className={style.epHeaderLeft}>
+              <div className={style.epHeaderIcon}>
+                <i className="bi bi-pencil-square" />
+              </div>
+              <div>
+                <h2 className={style.epHeaderTitle}>Edit Post</h2>
+                <p className={style.epHeaderSub}>Update post details below</p>
+              </div>
             </div>
+            <button className={style.epCloseBtn} onClick={toggle} type="button" aria-label="Close">
+              <i className="bi bi-x-lg" />
+            </button>
+          </div>
+
+          {/* Body */}
+          {newPost ? (
+            <form onSubmit={handleSubmit}>
+              <div className={style.epBody}>
+
+                {/* Media upload */}
+                <div className={style.epField}>
+                  <label className={style.epLabel}>
+                    <i className="bi bi-image" />
+                    Post Media
+                    <span className={style.epLabelHint}>Optional — replaces current media</span>
+                  </label>
+
+                  {/* Current media preview */}
+                  {(preview || newPost.postMediaUrl) && (
+                    <div className={style.epCurrentMedia}>
+                      <img
+                        src={preview || newPost.postMediaUrl}
+                        alt="media"
+                        className={style.epMediaImg}
+                      />
+                      {preview && (
+                        <span className={style.epNewBadge}>New</span>
+                      )}
+                    </div>
+                  )}
+
+                  <div
+                    className={style.epDropZone}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <i className="bi bi-cloud-arrow-up" style={{ fontSize: 22, color: "#9ca3af" }} />
+                    <span className={style.epDropText}>
+                      {myFile ? myFile.name : "Click to upload new media"}
+                    </span>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleFileChange}
+                    style={{ display: "none" }}
+                  />
+                </div>
+
+                {/* Content */}
+                <div className={style.epField}>
+                  <label className={style.epLabel} htmlFor="ep-content">
+                    <i className="bi bi-text-paragraph" />
+                    Post Content
+                  </label>
+                  <textarea
+                    id="ep-content"
+                    required
+                    rows={4}
+                    value={newPost.postContent || ""}
+                    onChange={(e) => setNewPost((p) => ({ ...p, postContent: e.target.value }))}
+                    className={style.epTextarea}
+                    placeholder="Write post content…"
+                  />
+                </div>
+
+                {/* Tag */}
+                <div className={style.epField}>
+                  <label className={style.epLabel} htmlFor="ep-tag">
+                    <i className="bi bi-tag" />
+                    Tag
+                    <span className={style.epLabelHint}>blank, buy, or sell</span>
+                  </label>
+                  <div className={style.epTagRow}>
+                    {TAG_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`${style.epTagBtn} ${(newPost.tag || "") === opt.value ? style.epTagBtnActive : ""}`}
+                        onClick={() => setNewPost((p) => ({ ...p, tag: opt.value }))}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    id="ep-tag"
+                    type="text"
+                    value={newPost.tag || ""}
+                    onChange={(e) => setNewPost((p) => ({ ...p, tag: e.target.value.toLowerCase() }))}
+                    placeholder="or type custom tag…"
+                    className={style.epInput}
+                  />
+                </div>
+
+              </div>
+
+              {/* Footer */}
+              <div className={style.epFooter}>
+                <button type="button" className={style.epCancelBtn} onClick={toggle}>
+                  Cancel
+                </button>
+                <button type="submit" className={style.epSubmitBtn}>
+                  <i className="bi bi-check-circle" />
+                  Update Post
+                </button>
+              </div>
+            </form>
           ) : (
-            <div className="p-2  text-center ">Loading...</div>
+            <div className={style.epLoading}>
+              <span className={style.epLoadingSpinner} />
+              Loading…
+            </div>
           )}
-        </Modal>
-      </div>
+        </div>
+      </Modal>
 
       <Loader loading={loading} />
     </>

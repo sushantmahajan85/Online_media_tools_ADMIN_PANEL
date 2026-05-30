@@ -1,109 +1,193 @@
-import React from "react";
-import style from "./ui.module.css"
-import { useState } from "react";
+import React, { useState } from "react";
+import style from "./ui.module.css";
 import { useSelector } from "react-redux";
 import { selectAllPinnedPosts } from "../../Store/authSlice";
-import { Button } from "reactstrap";
 import { DeleteModel } from "./DeleteModel";
 
-
-
 export function PinnedPost() {
-
     const StorePinnedPosts = useSelector(selectAllPinnedPosts);
-
     const [modal, setModal] = useState(false);
+    const [deltedId, setDeletedId] = useState("");
+    const [deleteWhatUsers, setdeleteWhatUsers] = useState("");
+    const [pContent, setpContent] = useState("");
+    const [search, setSearch] = useState("");
+    const [expandedId, setExpandedId] = useState(null);
+
     const toggle = () => setModal(!modal);
-    const [deltedId, setDeletedId] = useState('')
-    const [deleteWhatUsers, setdeleteWhatUsers] = useState('')
-    const [pContent, setpContent] = useState()
-    // console.log(StorePinnedPosts);
 
-    return (<>
-        <div className={`p-2  text-light ${style.Sheading} `}>
-            <h2 className={style.Heading}>
-                Pinned Posts
-            </h2>
-        </div>
+    const filtered = (StorePinnedPosts || []).filter((p) => {
+        const q = search.toLowerCase();
+        return (
+            (p.postContent || "").toLowerCase().includes(q) ||
+            (p.userName || "").toLowerCase().includes(q)
+        );
+    });
 
-        {StorePinnedPosts && StorePinnedPosts.length > 0 ?
-            <div className="my-2 p-2">
+    function formatDate(raw) {
+        if (!raw) return "—";
+        const d = new Date(raw);
+        if (isNaN(d)) return raw.slice(0, 15);
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
 
-                <div className={style.containerContent}>
-                    <div className={style.HeadingContent}>
-                        <div className="row gap-2">
-                            <div className="col d-flex align-items-center justify-content-center">
-                                <h2 className="fw-bold fs-5">Media</h2>
-                            </div>
-                            <div className="col d-flex align-items-center justify-content-center">
-                                <h2 className="fw-bold fs-5">Content</h2>
-                            </div>
+    function confirmDelete(id) {
+        setDeletedId(id);
+        setdeleteWhatUsers("BumperPost");
+        setpContent("Are you sure you want to delete this Pinned Post? This action cannot be undone.");
+        setModal(true);
+    }
 
-                            <div className="col d-flex align-items-center justify-content-center">
-                                <h2 className="fw-bold fs-5">Posted by</h2>
-                            </div>
-                            <div className="col d-flex align-items-center justify-content-center">
-                                <h2 className="fw-bold fs-5">Posted Date</h2>
-                            </div>
-
-                            <div className="col d-flex align-items-center justify-content-center">
-                                <h2 className="fw-bold fs-5">Action</h2>
-                            </div>
-
+    return (
+        <>
+            <div className={style.ppPage}>
+                {/* Toolbar */}
+                <div className={style.ppToolbar}>
+                    <div className={style.ppToolbarLeft}>
+                        <div className={style.ppSearchWrap}>
+                            <i className={`bi bi-search ${style.ppSearchIcon}`} />
+                            <input
+                                type="text"
+                                placeholder="Search content or author…"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className={style.ppSearchInput}
+                            />
+                            {search && (
+                                <button
+                                    className={style.ppSearchClear}
+                                    onClick={() => setSearch("")}
+                                    type="button"
+                                >
+                                    <i className="bi bi-x" />
+                                </button>
+                            )}
                         </div>
                     </div>
-                    {StorePinnedPosts.map((pst, index) => {
-                        return <div key={index} className={style.Content}>
-                            <div className="row">
-                                {pst.postMediaUrl ?
-                                    <div className="col">
-                                        <div>
-                                            <img src={pst.postMediaUrl} alt="PostMedia" style={{ borderRadius: "1rem" }} width={"120rem"} height={"120rem"} />
-                                        </div>
-                                    </div>
-                                    :
-                                    <div className="col  d-flex align-items-center justify-content-center">
-                                    <h2 className="fw-medium fs-6 text-muted">No Media</h2>
-                                </div>
-                                }
-                                <div className="col  d-flex align-items-center justify-content-center">
-                                    <h2 className="fw-medium fs-6">{pst.postContent}</h2>
-                                </div>
-
-                                <div className="col d-flex align-items-center justify-content-center">
-                                    <h2 className="fw-medium fs-6">{pst.userName}</h2>
-                                </div>
-                                <div className="col d-flex align-items-center justify-content-center">
-                                    <h2 className="fw-medium fs-6">{pst.PostCreated ? pst.PostCreated.slice(0, 15) : 'NaN'}</h2>
-                                </div>
-
-                                <div className="col d-flex align-items-center justify-content-center">
-                                    <Button className="Reject"
-                                        onClick={() => {
-                                            setDeletedId(pst._id)
-                                            setModal(!modal);
-                                            setdeleteWhatUsers("BumperPost")
-                                            setpContent(' Are you sure you want to Delete  this Pinned Post? This action cannot be undone.')
-                                        }}
-                                    ><i className="bi bi-trash3"></i></Button>
-                                </div>
-
-                            </div>
-                        </div>
-                    })}
-
-
-
+                    <div className={style.ppToolbarRight}>
+                        <span className={style.ppCountBadge}>
+                            <i className="bi bi-pin-angle-fill" />
+                            {filtered.length} pinned {filtered.length === 1 ? "post" : "posts"}
+                        </span>
+                    </div>
                 </div>
-            </div> :
-            <div className=" text-xl d-flex  align-items-center my-5 justify-content-center">
-                <p className="text-center center fw-bolder ">
-                    No  Pinned Posts Found
-                </p>
+
+                {/* Table */}
+                <div className={style.ppTableWrap}>
+                    {filtered.length > 0 ? (
+                        <table className={style.ppTable}>
+                            <thead>
+                                <tr>
+                                    <th className={style.ppTh} style={{ width: 36 }}>#</th>
+                                    <th className={style.ppTh} style={{ width: 80 }}>Media</th>
+                                    <th className={style.ppTh}>Content</th>
+                                    <th className={style.ppTh} style={{ width: 160 }}>Posted By</th>
+                                    <th className={style.ppTh} style={{ width: 130 }}>Date</th>
+                                    <th className={style.ppTh} style={{ width: 90, textAlign: "center" }}>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map((pst, index) => {
+                                    const isExpanded = expandedId === pst._id;
+                                    return (
+                                        <tr key={pst._id} className={style.ppRow}>
+                                            <td className={style.ppTd} style={{ color: "#9ca3af", fontSize: 13 }}>
+                                                {index + 1}
+                                            </td>
+
+                                            {/* Media */}
+                                            <td className={style.ppTd}>
+                                                {pst.postMediaUrl ? (
+                                                    <img
+                                                        src={pst.postMediaUrl}
+                                                        alt="media"
+                                                        className={style.ppThumb}
+                                                    />
+                                                ) : (
+                                                    <span className={style.ppNoMedia}>
+                                                        <i className="bi bi-image" />
+                                                    </span>
+                                                )}
+                                            </td>
+
+                                            {/* Content */}
+                                            <td className={style.ppTd}>
+                                                <div className={style.ppContentCell}>
+                                                    <p className={isExpanded ? style.ppContentFull : style.ppContentClamp}>
+                                                        {pst.postContent || <span style={{ color: "#9ca3af" }}>No content</span>}
+                                                    </p>
+                                                    {pst.postContent && pst.postContent.length > 80 && (
+                                                        <button
+                                                            className={style.ppExpandBtn}
+                                                            onClick={() => setExpandedId(isExpanded ? null : pst._id)}
+                                                            type="button"
+                                                        >
+                                                            {isExpanded ? "Show less" : "Show more"}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+
+                                            {/* Author */}
+                                            <td className={style.ppTd}>
+                                                <div className={style.ppAuthorCell}>
+                                                    <div className={style.ppAuthorAvatar}>
+                                                        {(pst.userName || "?")[0].toUpperCase()}
+                                                    </div>
+                                                    <span className={style.ppAuthorName}>{pst.userName || "—"}</span>
+                                                </div>
+                                            </td>
+
+                                            {/* Date */}
+                                            <td className={style.ppTd}>
+                                                <span className={style.ppDate}>{formatDate(pst.PostCreated)}</span>
+                                            </td>
+
+                                            {/* Action */}
+                                            <td className={style.ppTd} style={{ textAlign: "center" }}>
+                                                <button
+                                                    className={style.ppDeleteBtn}
+                                                    onClick={() => confirmDelete(pst._id)}
+                                                    type="button"
+                                                    title="Remove pin"
+                                                >
+                                                    <i className="bi bi-trash3" />
+                                                    Unpin
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className={style.ppEmpty}>
+                            <i className="bi bi-pin-angle" style={{ fontSize: 44, opacity: 0.2 }} />
+                            <p className={style.ppEmptyTitle}>
+                                {search ? "No posts match your search." : "No pinned posts yet."}
+                            </p>
+                            {search && (
+                                <button
+                                    className={style.ppEmptyClear}
+                                    onClick={() => setSearch("")}
+                                    type="button"
+                                >
+                                    Clear search
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
-        }
 
-        <DeleteModel modal={modal} setModal={setModal} toggle={toggle} pContent={pContent} deleteWhat={deleteWhatUsers} deltedId={deltedId} setDeletedId={setDeletedId} />
-
-    </>)
+            <DeleteModel
+                modal={modal}
+                setModal={setModal}
+                toggle={toggle}
+                pContent={pContent}
+                deleteWhat={deleteWhatUsers}
+                deltedId={deltedId}
+                setDeletedId={setDeletedId}
+            />
+        </>
+    );
 }

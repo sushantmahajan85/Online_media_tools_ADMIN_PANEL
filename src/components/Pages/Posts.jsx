@@ -1,6 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import style from "./ui.module.css";
-import { useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { Loader } from "../Loader/loader";
@@ -11,459 +10,342 @@ import {
   addPinnedPosts,
   selectAllPinnedPosts,
 } from "../../Store/authSlice";
-import { Button } from "reactstrap";
 import { DeleteModel } from "./DeleteModel";
 import { EditPost } from "./EditPost";
-// import { messaging } from "../../firebase";
-// import imageCompression from 'browser-image-compression';
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 
-export function Posts() {
-  // const [selectedOption, setSelectedOption] = useState('Select..');
+function StatusBadge({ post }) {
+  if (post.underApproval)
+    return <span className={style.pstBadgePending}>Pending</span>;
+  if (post.isApproved)
+    return <span className={style.pstBadgeApproved}>Approved</span>;
+  return <span className={style.pstBadgeDisapproved}>Disapproved</span>;
+}
 
+export function Posts() {
   const dispatch = useDispatch();
   const StorePosts = useSelector(selectAllPosts);
   const StorePinnedPosts = useSelector(selectAllPinnedPosts);
   const [loading, setloading] = useState(false);
-  // const [Myfile, setMyfile] = useState(false);
   const [modal, setModal] = useState(false);
   const toggle = () => setModal(!modal);
   const [deltedId, setDeletedId] = useState("");
   const [deleteWhatUsers, setdeleteWhatUsers] = useState("");
-  const [pContent, setpContent] = useState();
-  // const [postId, setPostId] = useState('')
-  // // console.log(StorePosts);
+  const [pContent, setpContent] = useState("");
   const [modalEdit, setmodalEdit] = useState(false);
-  // const toggleEdit = () => setmodalEdit(!modal);
-  const [postData, setpostData] = useState();
+  const [postData, setpostData] = useState(null);
   const [TotalPinned, setTotalPinned] = useState(0);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
-    let MyPinnedPosts = 0;
-    StorePinnedPosts.forEach((userobjects) => {
-      if (userobjects.isPinnedT === true) {
-        MyPinnedPosts++;
-      }
-    });
-    setTotalPinned(MyPinnedPosts);
+    const count = StorePinnedPosts.filter((p) => p.isPinnedT === true).length;
+    setTotalPinned(count);
   }, [StorePinnedPosts]);
-  // // console.log(TotalPinned);
+
+  const filtered = (StorePosts || []).filter((post) => {
+    const q = search.toLowerCase();
+    const matchSearch =
+      (post.postContent || "").toLowerCase().includes(q) ||
+      (post.userName || "").toLowerCase().includes(q);
+    const matchStatus =
+      statusFilter === "all" ||
+      (statusFilter === "pending" && post.underApproval) ||
+      (statusFilter === "approved" && post.isApproved && !post.underApproval) ||
+      (statusFilter === "disapproved" && !post.isApproved && !post.underApproval);
+    return matchSearch && matchStatus;
+  });
+
+  async function toggleApprove(post) {
+    try {
+      setloading(true);
+      const res = await axios.post(
+        `${serverURL}/api/posts/${post._id}/Approve_post`,
+        { appproveStatus: !post.isApproved }
+      );
+      if (res?.status === 200) {
+        toast.success(res.data.message);
+        dispatch(updatePostStatus({ _id: post._id, post: res.data.post }));
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update status");
+    } finally {
+      setloading(false);
+    }
+  }
+
+  async function pinPost(post) {
+    if (post.isPinned) { toast.info("Already pinned"); return; }
+    try {
+      setloading(true);
+      const res = await axios.post(
+        `${serverURL}/api/PinnedPosts/${post._id}/add_Pinned_post`,
+        { TotalPinned }
+      );
+      if (res?.status === 200) {
+        toast.success(res.data.message);
+        dispatch(addPinnedPosts({ postId: post._id, NewBumperPost: res.data.newBumperpost, TotalPinned }));
+        window.location.reload();
+      }
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 401 || status === 409) toast.warning(err.response.data.message);
+      else toast.error(err?.response?.data?.message || "Failed to pin post");
+    } finally {
+      setloading(false);
+    }
+  }
+
+  async function addToLinkedIn(post) {
+    try {
+      setloading(true);
+      const res = await axios.post(`${serverURL}/api/posts/${post._id}/admin-Linkedin`);
+      if (res?.status === 200) {
+        toast.success(res.data.message);
+        dispatch(updatePostStatus({ _id: post._id, post: res.data.post }));
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to add to LinkedIn");
+    } finally {
+      setloading(false);
+    }
+  }
+
+  function confirmDelete(id) {
+    setDeletedId(id);
+    setdeleteWhatUsers("Post");
+    setpContent("Are you sure you want to delete this post? This action cannot be undone.");
+    setModal(true);
+  }
+
+  function formatDate(raw) {
+    if (!raw) return "—";
+    const d = new Date(raw);
+    return isNaN(d)
+      ? raw.slice(0, 15)
+      : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  const approvedCount = (StorePosts || []).filter((p) => p.isApproved && !p.underApproval).length;
+  const pendingCount = (StorePosts || []).filter((p) => p.underApproval).length;
 
   return (
     <>
-      {/* <button onClick={async () => {
-           try {
-            await messaging.requestPermission();
-            console.log('Notification permission granted.');
-            const token = await messaging.getToken();
-            console.log('Token:', token);
-        } catch (err) {
-            console.error('Unable to get permission to notify.', err);
-        }
-             
-            // const message = {
-            //     notification: {
-            //         title: "Notif",
-            //         body: 'This is a Test Notification okay'
-            //     },
-            //     token: "dDhpuiwnS5eLnjKWt-Zjls:APA91bE_3jWCeUM1wSRbGSre-6pLGO2z4K4VtEvq114ezM2YJRMVaLyoULMY116nkJx9rXpNLEgSDuz7k1LyuEMnuj3jLL2VWVRRX34tARxBJJl3pH2r4HRZs2TXQ_NhWvfPPSLWSUcJ",
-            // };
-            // messaging.sendToDevice(message.token, message)
-            //     .then((response) => {
-            //         // Response is an array of message IDs sent to the device.
-            //         console.log('Successfully sent message:', response);
-            //     })
-            //     .catch((error) => {
-            //         console.log('Error sending message 11111:', error);
-            //     });
-            // messaging.send(message)
-            //     .then((response) => {
-            //         // Response is a message ID string.
-            //         console.log('Successfully sent message:', response);
-            //     })
-            //     .catch((error) => {
-            //         console.log('Error sending message:', error);
-            //     });
-        // try {
-        //         const fcmEndpoint = 'https://fcm.googleapis.com/v1/projects/myproject-b5ae1/messages:send';
-        //         const fcmAccessToken = 'Bearer ya29.ElqKBGN2Ri_Uz...PbJ_uNasm';
-        //         // const fcmAccessToken = 'Bearer eyBTrmHDRtOCXPcE1-N_y_:APA91bFNgjnbPOx1Oj-p9L-inI14n0Wkbb09FshCKRQC9airic_c0Q2EQxZ_3wqJtRXEYYPId08dDsi8jAdsdLQu0wDtAtOnK_OfI4VSRvFqEMAdOOd8TlZq8VKkucwtAs72etdrW5wU';
+      <div className={style.pstPage}>
 
-        //         // Replace <token of destination app> with the actual FCM token of the destination app
-        //         const destinationToken = 'dDhpuiwnS5eLnjKWt-Zjls:APA91bE_3jWCeUM1wSRbGSre-6pLGO2z4K4VtEvq114ezM2YJRMVaLyoULMY116nkJx9rXpNLEgSDuz7k1LyuEMnuj3jLL2VWVRRX34tARxBJJl3pH2r4HRZs2TXQ_NhWvfPPSLWSUcJ';
-
-        //         const notificationPayload = {
-        //             "message": {
-        //                 "token": destinationToken,
-        //                 "notification": {
-        //                     "title": "FCM Message",
-        //                     "body": "This is a message from FCM okayy"
-        //                 },
-        //                 "webpush": {
-        //                     "headers": {
-        //                         "Urgency": "high"
-        //                     },
-        //                     "notification": {
-        //                         "body": "This is a message from FCM to web",
-        //                         "requireInteraction": true,
-        //                         "badge": "/events.png"
-        //                     }
-        //                 }
-        //             }
-        //         };
-
-        //         const axiosConfig = {
-        //             headers: {
-        //                 'Content-Type': 'application/json',
-        //                 'Authorization': fcmAccessToken,
-        //             },
-        //         };
-
-        //         const notify = await axios.post(fcmEndpoint, notificationPayload, axiosConfig)
-        //         if (notify.status === 200) {
-        //             console.log(notify)
-        //             console.log(notify.data)
-        //         }
-        //     } catch (error) {
-        //         console.log(error)
-        //     }
-        }} className="p-2 border border-danger ">
-            Add notification
-        </button>
-        <div className={`p-2  text-light ${style.Sheading} `}>
-            <h2 className={style.Heading}>
-                All Post
-            </h2>
-        </div> */}
-
-      {/* <input type="file" name="" id="" onChange={(e) => { setMyfile(e.target.files[0]) }} />
-        <button onClick={async () => {
-
-            try {
-
-                setloading(true)
-
-                const options = {
-                    maxSizeMB: 1,
-                    maxWidthOrHeight: 1920,
-                    useWebWorker: true,
-                };
-                const compressedFile = await imageCompression(Myfile, options);
-                // console.log("compressed file");
-                // console.log(compressedFile);
-
-
-                const formData = new FormData()
-                formData.append("postContent", "2 do not do any action on it")
-                formData.append("postMedia", compressedFile)
-                let response = await axios.post(`${serverURL}/api/posts/654f545cb80a37a368e19597/posts/add_post`, formData)
-
-                if (response && response.status === 200) {
-                    setloading(false)
-                    toast.success(response.data.message)
-                    // console.log(response.data.post);
-                    // dispatch(addNewPosts(response.data.newPost))
-                }
-
-
-            } catch (error) {
-                setloading(false)
-                if (error) {
-                    if (error.response) {
-                        // console.log(error.response.data);
-                        // console.log(error.response.status);
-                        toast.error(error.response.data.message);
-                    } else {
-                        toast.error("Failed to Add Post ");
-                    }
-                }
-
-            }
-        }} className={style.buttonDisApprove} >Add Post </button> */}
-
-      {StorePosts && StorePosts.length > 0 ? (
-        <div className="my-2 p-2">
-          <div className={style.containerContent}>
-            <div className={style.HeadingContent}>
-              <div className="row gap-2">
-                <div className="col  d-flex align-items-center justify-content-center">
-                  <h2 className="fw-bold fs-5">Media</h2>
-                </div>
-                <div className="col  d-flex align-items-center justify-content-center">
-                  <h2 className="fw-bold fs-5">Content</h2>
-                </div>
-
-                <div className="col  d-flex align-items-center justify-content-center">
-                  <h2 className="fw-bold fs-5">Posted by</h2>
-                </div>
-                <div className="col  d-flex align-items-center justify-content-center">
-                  <h2 className="fw-bold fs-5">Posted Date</h2>
-                </div>
-                <div className="col  d-flex align-items-center justify-content-center">
-                  <h2 className="fw-bold fs-5">Status</h2>
-                </div>
-                {/* <div className="col  d-flex align-items-center justify-content-center">
-                                <h2 className="fw-bold fs-5">LinkedIn</h2>
-                            </div> */}
-              </div>
-            </div>
-            {StorePosts.map((post, index) => {
-              return (
-                <div key={index} className={style.Content}>
-                  <div className="row gap-2 p-2 ">
-                    <div className="row gap-2 p-1 ">
-                      {post.postMediaUrl ? (
-                        <div className="col  d-flex align-items-center justify-content-center ">
-                          <div>
-                            <img
-                              src={post.postMediaUrl}
-                              alt="PostMedia"
-                              style={{ borderRadius: "1rem" }}
-                              width={"120rem"}
-                              height={"120rem"}
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="col  d-flex align-items-center justify-content-center">
-                          <h2 className="fw-medium fs-6 text-muted">
-                            No media
-                          </h2>
-                        </div>
-                      )}
-                      <div className="col d-flex align-items-center justify-content-center ">
-                        <h2 className="fw-medium fs-6">{post.postContent}</h2>
-                      </div>
-
-                      <div className="col d-flex align-items-center justify-content-center">
-                        <h2 className="fw-medium fs-6">{post.userName}</h2>
-                      </div>
-                      <div className="col d-flex align-items-center justify-content-center">
-                        <h2 className="fw-medium fs-6">
-                          {post.PostCreated
-                            ? post.PostCreated.slice(0, 15)
-                            : "NaN"}
-                        </h2>
-                      </div>
-                      <div className="col d-flex align-items-center justify-content-center">
-                        {post.underApproval ? (
-                          <span className="fw-bold fs-6 text-warning">
-                            Pending
-                          </span>
-                        ) : (
-                          <div>
-                            {post.isApproved ? (
-                              <span className="fw-bold fs-6 text-success">
-                                Approved
-                              </span>
-                            ) : (
-                              <span className="fw-bold fs-6 text-danger">
-                                Disapproved
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="row gap-2 p-1">
-                      <div className="col d-flex align-items-center justify-content-center">
-                        {/* Approve/Disapprove Button */}
-                        <button
-                          onClick={async () => {
-                            try {
-                              setloading(true);
-                              let response = await axios.post(
-                                `${serverURL}/api/posts/${post._id}/Approve_post`,
-                                { appproveStatus: !post.isApproved } // Toggle approval status
-                              );
-
-                              if (response && response.status === 200) {
-                                setloading(false);
-                                toast.success(response.data.message);
-                                dispatch(
-                                  updatePostStatus({
-                                    _id: post._id,
-                                    post: response.data.post,
-                                  })
-                                );
-                              }
-                            } catch (error) {
-                              setloading(false);
-                              if (error.response) {
-                                toast.error(error.response.data.message);
-                              } else {
-                                toast.error("Failed to Update Post Status");
-                              }
-                            }
-                          }}
-                          className={
-                            post.isApproved
-                              ? style.buttonDisApprove
-                              : style.buttonApprove
-                          }
-                        >
-                          {post.isApproved ? "Disapprove" : "Approve"}
-                        </button>
-                      </div>
-
-                      {/* add to pinned posts */}
-                      <div className="col d-flex align-items-center justify-content-start">
-                        <button
-                          onClick={async () => {
-                            if (post.isPinned) {
-                              toast.info("Already Added");
-                              return;
-                            }
-
-                            try {
-                              setloading(true);
-                              let response = await axios.post(
-                                `${serverURL}/api/PinnedPosts/${post._id}/add_Pinned_post`,
-                                { TotalPinned }
-                              );
-
-                              if (response && response.status === 200) {
-                                setloading(false);
-                                window.location.reload();
-                                toast.success(response.data.message);
-                                // console.log("response aya");
-                                // console.log(response.data.newBumperpost);
-                                dispatch(
-                                  addPinnedPosts({
-                                    postId: post._id,
-                                    NewBumperPost: response.data.newBumperpost,
-                                    TotalPinned,
-                                  })
-                                );
-                              }
-                            } catch (error) {
-                              setloading(false);
-                              if (error) {
-                                if (error.response) {
-                                  if (error.response.status === 401) {
-                                    toast.warning(error.response.data.message);
-                                  } else if (error.response.status === 409) {
-                                    toast.info(error.response.data.message);
-                                  } else {
-                                    // console.log(error.response.data);
-                                    // console.log(error.response.status);
-                                    toast.error(error.response.data.message);
-                                  }
-                                } else {
-                                  toast.error("Failed to Add Post to Bumper");
-                                }
-                              }
-                            }
-                          }}
-                          className={
-                            post.isPinned ? style.buttonAdded : style.buttonAdd
-                          }
-                        >
-                          {" "}
-                          {post.isPinned ? "Added" : "Add to pinned posts"}{" "}
-                        </button>
-                      </div>
-                      {/* edit post button */}
-                      <div
-                        onClick={() => {
-                          setmodalEdit(true);
-                          setpostData(post);
-                        }}
-                        style={{ cursor: "pointer" }}
-                        className="col d-flex align-items-center  justify-content-center"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="25"
-                          height="25"
-                          fill="currentColor"
-                          className="bi bi-pencil-square"
-                          viewBox="0 0 16 16"
-                        >
-                          <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
-                          <path
-                            fillRule="evenodd"
-                            d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
-                          />
-                        </svg>
-                      </div>
-                      {/* delete post button */}
-                      <div className="col d-flex align-items-center justify-content-center">
-                        <Button
-                          className="Reject"
-                          onClick={() => {
-                            setDeletedId(post._id);
-                            setModal(!modal);
-                            setdeleteWhatUsers("Post");
-                            setpContent(
-                              " Are you sure you want to Delete  this Post? This action cannot be undone."
-                            );
-                          }}
-                        >
-                          <i className="bi bi-trash3"></i>
-                        </Button>
-                      </div>
-
-                      {/* add to linked in button */}
-                      <div className="col d-flex align-items-center justify-content-center">
-                        <button
-                          onClick={async () => {
-                            try {
-                              setloading(true);
-                              let response = await axios.post(
-                                `${serverURL}/api/posts/${post._id}/admin-Linkedin`
-                              );
-
-                              if (response && response.status === 200) {
-                                setloading(false);
-                                toast.success(response.data.message);
-                                dispatch(
-                                  updatePostStatus({
-                                    _id: post._id,
-                                    post: response.data.post,
-                                  })
-                                );
-                              }
-                            } catch (error) {
-                              setloading(false);
-                              if (error) {
-                                if (error.response) {
-                                  // console.log(error.response.data);
-                                  // console.log(error.response.status);
-                                  toast.error(error.response.data.message);
-                                } else {
-                                  toast.error(
-                                    "Failed to add post to linkedin."
-                                  );
-                                }
-                              }
-                            }
-                          }}
-                          className={
-                            post.addedToAdminLinkedin
-                              ? style.buttonDisApprove
-                              : style.buttonApprove
-                          }
-                        >
-                          {" "}
-                          {post.addedToAdminLinkedin
-                            ? "Already on LinkedIn"
-                            : "Add to LinkedIn"}{" "}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+        {/* Stats row */}
+        <div className={style.pstStats}>
+          <div className={style.pstStat}>
+            <span className={style.pstStatNum}>{StorePosts.length}</span>
+            <span className={style.pstStatLabel}>Total</span>
+          </div>
+          <div className={style.pstStatDiv} />
+          <div className={style.pstStat}>
+            <span className={`${style.pstStatNum} ${style.pstStatGreen}`}>{approvedCount}</span>
+            <span className={style.pstStatLabel}>Approved</span>
+          </div>
+          <div className={style.pstStatDiv} />
+          <div className={style.pstStat}>
+            <span className={`${style.pstStatNum} ${style.pstStatAmber}`}>{pendingCount}</span>
+            <span className={style.pstStatLabel}>Pending</span>
+          </div>
+          <div className={style.pstStatDiv} />
+          <div className={style.pstStat}>
+            <span className={`${style.pstStatNum} ${style.pstStatPurple}`}>{StorePinnedPosts.length}</span>
+            <span className={style.pstStatLabel}>Pinned</span>
           </div>
         </div>
-      ) : (
-        <div className=" text-xl d-flex  align-items-center my-5 justify-content-center">
-          <p className="text-center center fw-bolder ">No Posts Found</p>
+
+        {/* Toolbar */}
+        <div className={style.pstToolbar}>
+          <div className={style.pstSearchWrap}>
+            <i className={`bi bi-search ${style.pstSearchIcon}`} />
+            <input
+              type="text"
+              placeholder="Search content or author…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={style.pstSearchInput}
+            />
+            {search && (
+              <button className={style.pstSearchClear} onClick={() => setSearch("")} type="button">
+                <i className="bi bi-x" />
+              </button>
+            )}
+          </div>
+
+          <div className={style.pstFilters}>
+            {["all", "approved", "pending", "disapproved"].map((f) => (
+              <button
+                key={f}
+                className={`${style.pstFilterBtn} ${statusFilter === f ? style.pstFilterBtnActive : ""}`}
+                onClick={() => setStatusFilter(f)}
+                type="button"
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          <span className={style.pstCount}>
+            {filtered.length} of {StorePosts.length}
+          </span>
         </div>
-      )}
+
+        {/* Table */}
+        <div className={style.pstTableWrap}>
+          {filtered.length > 0 ? (
+            <table className={style.pstTable}>
+              <thead>
+                <tr>
+                  <th className={style.pstTh} style={{ width: 36 }}>#</th>
+                  <th className={style.pstTh} style={{ width: 72 }}>Media</th>
+                  <th className={style.pstTh}>Content</th>
+                  <th className={style.pstTh} style={{ width: 150 }}>Posted By</th>
+                  <th className={style.pstTh} style={{ width: 120 }}>Date</th>
+                  <th className={style.pstTh} style={{ width: 110 }}>Status</th>
+                  <th className={style.pstTh} style={{ width: 220, textAlign: "center" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((post, index) => {
+                  const isExpanded = expandedId === post._id;
+                  return (
+                    <tr key={post._id} className={style.pstRow}>
+                      {/* # */}
+                      <td className={style.pstTd} style={{ color: "#9ca3af", fontSize: 13 }}>
+                        {index + 1}
+                      </td>
+
+                      {/* Media */}
+                      <td className={style.pstTd}>
+                        {post.postMediaUrl ? (
+                          <img src={post.postMediaUrl} alt="media" className={style.pstThumb} />
+                        ) : (
+                          <span className={style.pstNoMedia}>
+                            <i className="bi bi-image" />
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Content */}
+                      <td className={style.pstTd}>
+                        <div className={style.pstContentCell}>
+                          <p className={isExpanded ? style.pstContentFull : style.pstContentClamp}>
+                            {post.postContent || <span style={{ color: "#9ca3af" }}>No content</span>}
+                          </p>
+                          {post.postContent && post.postContent.length > 80 && (
+                            <button
+                              className={style.pstExpandBtn}
+                              onClick={() => setExpandedId(isExpanded ? null : post._id)}
+                              type="button"
+                            >
+                              {isExpanded ? "Show less" : "Show more"}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Author */}
+                      <td className={style.pstTd}>
+                        <div className={style.pstAuthorCell}>
+                          <div className={style.pstAuthorAvatar}>
+                            {(post.userName || "?")[0].toUpperCase()}
+                          </div>
+                          <span className={style.pstAuthorName}>{post.userName || "—"}</span>
+                        </div>
+                      </td>
+
+                      {/* Date */}
+                      <td className={style.pstTd}>
+                        <span className={style.pstDate}>{formatDate(post.PostCreated)}</span>
+                      </td>
+
+                      {/* Status */}
+                      <td className={style.pstTd}>
+                        <StatusBadge post={post} />
+                      </td>
+
+                      {/* Actions */}
+                      <td className={style.pstTd}>
+                        <div className={style.pstActions}>
+                          {/* Approve / Disapprove */}
+                          <button
+                            className={post.isApproved ? style.pstBtnDisapprove : style.pstBtnApprove}
+                            onClick={() => toggleApprove(post)}
+                            type="button"
+                            title={post.isApproved ? "Disapprove" : "Approve"}
+                          >
+                            <i className={`bi ${post.isApproved ? "bi-x-circle" : "bi-check-circle"}`} />
+                          </button>
+
+                          {/* Pin */}
+                          <button
+                            className={post.isPinned ? style.pstBtnPinned : style.pstBtnPin}
+                            onClick={() => pinPost(post)}
+                            type="button"
+                            title={post.isPinned ? "Already pinned" : "Pin post"}
+                          >
+                            <i className={`bi ${post.isPinned ? "bi-pin-fill" : "bi-pin"}`} />
+                          </button>
+
+                          {/* Edit */}
+                          <button
+                            className={style.pstBtnIcon}
+                            onClick={() => { setmodalEdit(true); setpostData(post); }}
+                            type="button"
+                            title="Edit post"
+                          >
+                            <i className="bi bi-pencil" />
+                          </button>
+
+                          {/* LinkedIn */}
+                          <button
+                            className={post.addedToAdminLinkedin ? style.pstBtnLinkedInDone : style.pstBtnLinkedIn}
+                            onClick={() => addToLinkedIn(post)}
+                            type="button"
+                            title={post.addedToAdminLinkedin ? "On LinkedIn" : "Add to LinkedIn"}
+                          >
+                            <i className="bi bi-linkedin" />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            className={style.pstBtnDelete}
+                            onClick={() => confirmDelete(post._id)}
+                            type="button"
+                            title="Delete post"
+                          >
+                            <i className="bi bi-trash3" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className={style.pstEmpty}>
+              <i className="bi bi-file-earmark-x" style={{ fontSize: 44, opacity: 0.2 }} />
+              <p className={style.pstEmptyTitle}>
+                {search || statusFilter !== "all" ? "No posts match your filters." : "No posts found."}
+              </p>
+              {(search || statusFilter !== "all") && (
+                <button
+                  className={style.pstEmptyClear}
+                  onClick={() => { setSearch(""); setStatusFilter("all"); }}
+                  type="button"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       <DeleteModel
         modal={modal}
@@ -474,13 +356,7 @@ export function Posts() {
         deltedId={deltedId}
         setDeletedId={setDeletedId}
       />
-
-      <EditPost
-        modalEdit={modalEdit}
-        postData={postData}
-        setmodalEdit={setmodalEdit}
-      />
-
+      <EditPost modalEdit={modalEdit} postData={postData} setmodalEdit={setmodalEdit} />
       <Loader loading={loading} />
     </>
   );

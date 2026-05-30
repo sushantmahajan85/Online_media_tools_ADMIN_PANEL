@@ -1,9 +1,10 @@
 
 .containerScroll {
-    height: 100vh;
+    height: calc(100vh - 62px);
     overflow-y: scroll;
     overflow-x: hidden;
     min-width: 0;
+    padding-top: 20px;
 }
 
 .containerScroll .wrapper {

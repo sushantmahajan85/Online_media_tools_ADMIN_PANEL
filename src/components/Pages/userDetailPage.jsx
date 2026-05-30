@@ -9,11 +9,26 @@ import {
 } from "../../utils/userDisplay";
 import style from "./ui.module.css";
 
-function DetailField({ label, children }) {
+function InfoField({ icon, label, children }) {
   return (
-    <div className={style.propRow}>
-      <div className={style.propLabel}>{label}</div>
-      <div className={style.propValue}>{children}</div>
+    <div className={style.udpField}>
+      <span className={`bi ${icon} ${style.udpFieldIcon}`} />
+      <div className={style.udpFieldContent}>
+        <span className={style.udpFieldLabel}>{label}</span>
+        <span className={style.udpFieldValue}>{children}</span>
+      </div>
+    </div>
+  );
+}
+
+function InfoCard({ title, icon, children }) {
+  return (
+    <div className={style.udpInfoCard}>
+      <div className={style.udpInfoCardHeader}>
+        <span className={`bi ${icon} ${style.udpInfoCardIcon}`} />
+        <span className={style.udpInfoCardTitle}>{title}</span>
+      </div>
+      <div className={style.udpInfoCardBody}>{children}</div>
     </div>
   );
 }
@@ -45,132 +60,149 @@ export function UserDetailpage() {
   }, [user]);
 
   return (
-    <>
-      <div className={`p-2 text-light ${style.Sheading}`}>
-        <h2 className={style.Heading}>User profile</h2>
-      </div>
-
+    <div className={style.udpPage}>
       {user && (
-        <div className={style.userDetailShell}>
-          <Row className="g-3 mb-3">
-            <Col lg={4} md={5}>
-              <div className={style.userDetailHeroCard}>
-                <div className={style.userDetailAvatar}>
-                  {user.profileImageUrl ? (
-                    <img src={user.profileImageUrl} alt="" />
-                  ) : (
-                    <div className={style.userDetailAvatarPlaceholder}>
-                      {initials}
+        <div className={style.udpShell}>
+          <Row className="g-4 mb-4">
+            <Col lg={4} md={5} xs={12}>
+              <div className={style.udpHeroCard}>
+                <div className={style.udpHeroCover}>
+                  <div className={style.udpAvatarWrap}>
+                    {user.profileImageUrl ? (
+                      <img
+                        src={user.profileImageUrl}
+                        alt={fullName}
+                        className={style.udpAvatarImg}
+                      />
+                    ) : (
+                      <div className={style.udpAvatarInitials}>{initials}</div>
+                    )}
+                  </div>
+                </div>
+                <div className={style.udpHeroBody}>
+                  <div
+                    className={`${style.udpVerifyBadge} ${
+                      user.isverified
+                        ? style.udpVerifyBadgeOk
+                        : style.udpVerifyBadgeFail
+                    }`}
+                  >
+                    <span
+                      className={`bi ${
+                        user.isverified
+                          ? "bi-patch-check-fill"
+                          : "bi-patch-exclamation-fill"
+                      }`}
+                    />
+                    {user.isverified ? "Verified" : "Unverified"}
+                  </div>
+
+                  <div className={style.udpHeroName}>{fullName}</div>
+
+                  {user.Designation && (
+                    <div className={style.udpHeroDesignation}>
+                      {user.Designation}
                     </div>
                   )}
+
+                  <div className={style.udpHeroMeta}>
+                    <span className="bi bi-envelope" />
+                    <span>{displayText(user.email)}</span>
+                  </div>
                 </div>
-                <div className={style.userDetailName}>{fullName}</div>
-                <p className={`${style.userDetailMeta} mb-1`}>
-                  {displayText(user.email)}
-                </p>
-                <p className={`${style.userDetailMeta} small font-monospace mb-0`}>
-                  {displayText(user._id)}
-                </p>
               </div>
             </Col>
-            <Col lg={8} md={7}>
+
+            <Col lg={8} md={7} xs={12}>
               <Row className="g-3">
                 <Col md={6}>
-                  <div className={style.propertiesBox}>
-                    <div className={style.propertiesBoxTitle}>
-                      {"Account & access"}
-                    </div>
-                    <DetailField label="Verification">
-                      {user.isverified === true ? (
-                        <span className="text-success fw-semibold">
-                          Verified
-                        </span>
-                      ) : (
-                        <span className="text-danger fw-semibold">
-                          Unverified
-                        </span>
-                      )}
-                    </DetailField>
-                    <DetailField label="Email">
+                  <InfoCard title="Account & Access" icon="bi-shield-lock">
+                    <InfoField icon="bi-envelope-check" label="Email">
                       {displayText(user.email)}
-                    </DetailField>
-                    <DetailField label="Mobile">
+                    </InfoField>
+                    <InfoField icon="bi-phone" label="Mobile">
                       {displayText(user.mobileNumber)}
-                    </DetailField>
-                    <DetailField label="IP address">
+                    </InfoField>
+                    <InfoField icon="bi-globe" label="IP Address">
                       {displayText(user.ipAddress)}
-                    </DetailField>
-                    <DetailField label="Device">
+                    </InfoField>
+                    <InfoField icon="bi-device-hdd" label="Device">
                       {displayText(user.device)}
-                    </DetailField>
-                    <DetailField label="Joining date">
+                    </InfoField>
+                    <InfoField icon="bi-calendar3" label="Joined">
                       {formatJoiningDateTime(user)}
-                    </DetailField>
-                  </div>
+                    </InfoField>
+                  </InfoCard>
                 </Col>
+
                 <Col md={6}>
-                  <div className={style.propertiesBox}>
-                    <div className={style.propertiesBoxTitle}>Profile</div>
-                    <DetailField label="Designation">
+                  <InfoCard title="Profile" icon="bi-person-badge">
+                    <InfoField icon="bi-briefcase" label="Designation">
                       {displayText(user.Designation)}
-                    </DetailField>
-                    <DetailField label="About">
+                    </InfoField>
+                    <InfoField icon="bi-info-circle" label="About">
                       {displayText(user.AboutMe)}
-                    </DetailField>
-                  </div>
+                    </InfoField>
+                  </InfoCard>
                 </Col>
+
                 <Col xs={12}>
-                  <div className={style.propertiesBox}>
-                    <div className={style.propertiesBoxTitle}>Social</div>
-                    <DetailField label="Facebook">
-                      {displayText(user.Facebook)}
-                    </DetailField>
-                    <DetailField label="Instagram">
-                      {displayText(user.Instagram)}
-                    </DetailField>
-                    <DetailField label="LinkedIn">
-                      {displayText(user.LinkedIn)}
-                    </DetailField>
-                    <DetailField label="Skype">
-                      {displayText(user.Skype)}
-                    </DetailField>
-                    <DetailField label="Telegram">
-                      {displayText(user.Telegram)}
-                    </DetailField>
-                  </div>
+                  <InfoCard title="Social" icon="bi-share">
+                    <Row className="g-0">
+                      <Col xs={12} sm={6}>
+                        <InfoField icon="bi-facebook" label="Facebook">
+                          {displayText(user.Facebook)}
+                        </InfoField>
+                        <InfoField icon="bi-instagram" label="Instagram">
+                          {displayText(user.Instagram)}
+                        </InfoField>
+                        <InfoField icon="bi-linkedin" label="LinkedIn">
+                          {displayText(user.LinkedIn)}
+                        </InfoField>
+                      </Col>
+                      <Col xs={12} sm={6}>
+                        <InfoField icon="bi-skype" label="Skype">
+                          {displayText(user.Skype)}
+                        </InfoField>
+                        <InfoField icon="bi-telegram" label="Telegram">
+                          {displayText(user.Telegram)}
+                        </InfoField>
+                      </Col>
+                    </Row>
+                  </InfoCard>
                 </Col>
               </Row>
             </Col>
           </Row>
+
+          <Row className="g-3 pb-4">
+            <Col xs={12} sm={6} md={4} lg={3}>
+              <Link
+                to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats`}
+                className={style.udpActionCard}
+              >
+                <div className={`${style.udpActionIcon} ${style.udpActionIconChats}`}>
+                  <img src="/chats.png" alt="" width={28} height={28} />
+                </div>
+                <span className={style.udpActionLabel}>Chats</span>
+                <span className={`bi bi-arrow-right-short ${style.udpActionArrow}`} />
+              </Link>
+            </Col>
+            <Col xs={12} sm={6} md={4} lg={3}>
+              <Link
+                to={`/Admin/AdminDashboard/UserDetails/${id}/Posts`}
+                className={style.udpActionCard}
+              >
+                <div className={`${style.udpActionIcon} ${style.udpActionIconPosts}`}>
+                  <img src="/mpost.png" alt="" width={28} height={28} />
+                </div>
+                <span className={style.udpActionLabel}>Posts</span>
+                <span className={`bi bi-arrow-right-short ${style.udpActionArrow}`} />
+              </Link>
+            </Col>
+          </Row>
         </div>
       )}
-
-      <div className={`container-fluid px-3 pb-4`}>
-        <Row className="g-3 my-2 justify-content-center text-center">
-          <Col xs={12} sm={6} md={4} lg={3}>
-            <Link
-              to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats`}
-              className={`${style.Box} h-100`}
-            >
-              <div>Chats</div>
-              <div>
-                <img src="/chats.png" alt="" width={36} height={36} />
-              </div>
-            </Link>
-          </Col>
-          <Col xs={12} sm={6} md={4} lg={3}>
-            <Link
-              to={`/Admin/AdminDashboard/UserDetails/${id}/Posts`}
-              className={`${style.Box} h-100`}
-            >
-              <div>Posts</div>
-              <div>
-                <img src="/mpost.png" alt="" width={36} height={36} />
-              </div>
-            </Link>
-          </Col>
-        </Row>
-      </div>
-    </>
+    </div>
   );
 }
