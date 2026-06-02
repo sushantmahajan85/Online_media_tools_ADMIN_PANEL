@@ -2,7 +2,7 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../Sidebar/ADSidebar";
 import Header from "../Header/ADHeader";
 import { Container } from "reactstrap";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader } from "../Loader/loader";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -21,112 +21,87 @@ const FullLayout = () => {
   const storeAllposts = useSelector(selectAllPosts)
   const storeAllBumperPosts = useSelector(selectAllPinnedPosts)
 
+  const usersFetchedRef = useRef(storeUsers.length > 0)
+  const postsFetchedRef = useRef(storeAllposts.length > 0)
+  const bumperPostsFetchedRef = useRef(storeAllBumperPosts.length > 0)
+
   useEffect(() => {
+    if (usersFetchedRef.current) return
+    usersFetchedRef.current = true
 
     async function getuser() {
       try {
-
         setLoading(true)
         const response = await axios.get(`${serverURL}/api/users/get_all_users`)
-        setLoading(false)
-        if (response && response.status === 200) {
-          // // console.log(response.data.users);
+        if (response?.status === 200) {
           dispatch(allusers(response.data.users))
           toast.success(response.data.message)
         }
       } catch (error) {
-        setLoading(false)
-        if (error.response.status === 401) {
-          toast.error(error.response.data.message);
-        } else if (error.response.status === 400) {
-          toast.error(error.response.data.message);
-        } else if (error.response.status === 500) {
-          toast.error(error.response.data.message);
-
-        } else {
-          // console.log("Failed to Load User Data");
+        const status = error.response?.status
+        const message = error.response?.data?.message
+        if (status === 401 || status === 400 || status === 500) {
+          toast.error(message)
         }
-
+      } finally {
+        setLoading(false)
       }
     }
-    if (!(storeUsers.length > 0)) {
 
-      getuser()
-    }
-
-
-  }, [dispatch , storeUsers])
+    getuser()
+  }, [dispatch])
 
   useEffect(() => {
+    if (postsFetchedRef.current) return
+    postsFetchedRef.current = true
 
     async function getAllposts() {
       try {
-
         setLoading(true)
         const response = await axios.get(`${serverURL}/api/posts/get_all_posts/0`)
-        setLoading(false)
-        if (response && response.status === 200) {
-          // // console.log(response.data.posts);
-          dispatch(allPosts(response.data.posts))
+        if (response?.status === 200) {
+          dispatch(allPosts(response.data.posts ?? []))
           toast.success(response.data.message)
         }
       } catch (error) {
-        setLoading(false)
-        if (error.response.status === 401) {
-          toast.error(error.response.data.message);
-        } else if (error.response.status === 400) {
-          toast.error(error.response.data.message);
-        } else if (error.response.status === 500) {
-          toast.error(error.response.data.message);
-
-        } else {
-          // console.log("Failed to Fetch Posts");
+        const status = error.response?.status
+        const message = error.response?.data?.message
+        if (status === 401 || status === 400 || status === 500) {
+          toast.error(message)
         }
-
+      } finally {
+        setLoading(false)
       }
     }
-    if (!(storeAllposts.length > 0)) {
 
-      getAllposts()
-    }
+    getAllposts()
+  }, [dispatch])
 
-
-  }, [dispatch , storeAllposts])
   useEffect(() => {
+    if (bumperPostsFetchedRef.current) return
+    bumperPostsFetchedRef.current = true
 
     async function getAllBumperposts() {
       try {
-
         setLoading(true)
         const response = await axios.get(`${serverURL}/api/PinnedPosts/get_all_Pinned`)
-        setLoading(false)
-        if (response && response.status === 200) {
-          // // console.log(response.data.users);
-          dispatch(allBumperPosts(response.data.posts))
+        if (response?.status === 200) {
+          dispatch(allBumperPosts(response.data.posts ?? []))
           toast.success(response.data.message)
         }
       } catch (error) {
-        setLoading(false)
-        if (error.response.status === 401) {
-          toast.error(error.response.data.message);
-        } else if (error.response.status === 400) {
-          toast.error(error.response.data.message);
-        } else if (error.response.status === 500) {
-          toast.error(error.response.data.message);
-
-        } else {
-          // console.log("Failed to Fetch Pinned  Posts");
+        const status = error.response?.status
+        const message = error.response?.data?.message
+        if (status === 401 || status === 400 || status === 500) {
+          toast.error(message)
         }
-
+      } finally {
+        setLoading(false)
       }
     }
-    if (!(storeAllBumperPosts.length > 0)) {
 
-      getAllBumperposts()
-    }
-
-
-  }, [dispatch , storeAllBumperPosts])
+    getAllBumperposts()
+  }, [dispatch])
 
 
 
