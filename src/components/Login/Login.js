@@ -10,6 +10,8 @@ import CryptoJS from "crypto-js";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 const secretEnKey = process.env.REACT_APP_SECRET_ENC_KEY;
+const ADMIN_OTP_DISPLAY_EMAIL =
+  process.env.REACT_APP_ADMIN_OTP_DISPLAY_EMAIL || "akidelhi@gmail.com";
 
 function maskEmailForDisplay(email) {
   if (!email || !email.includes("@")) return "your email";
@@ -63,7 +65,10 @@ export function Login() {
       if (response?.status === 200) {
         if (response.data.requiresOtp) {
           setOtpToken(response.data.otpToken);
-          setMaskedEmail(maskEmailForDisplay(loginData.email));
+          setMaskedEmail(
+            response.data.maskedEmail ||
+              maskEmailForDisplay(ADMIN_OTP_DISPLAY_EMAIL),
+          );
           setOtp("");
           setStep("otp");
           toast.success(response.data.message || "Verification code sent");
