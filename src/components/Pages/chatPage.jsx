@@ -11,7 +11,8 @@ import {
   getAdminChatParticipantId,
   isAdminChatParticipant,
 } from "../../utils/adminProfile";
-
+import { ChatComposer } from "./ChatComposer";
+import { uploadChatImage } from "../../utils/chatImageUpload";
 const serverURL = process.env.REACT_APP_SERVER_URL;
 
 function getChatParticipantIds(chatId, chatData) {
@@ -26,6 +27,8 @@ export function Chat() {
     const [currentChat, SetCurrentChat] = useState();
     const [currentMessages, setCurrentMessages] = useState([]);
     const [message, setMessage] = useState("");
+    const [isSending, setIsSending] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const storeUser = useSelector(selecteUsers);
     const adminAuth = useSelector(selectAdmin);
     const participantIds = getChatParticipantIds(chatId, currentChat);
@@ -40,7 +43,11 @@ export function Chat() {
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        const el = messagesEndRef.current;
+        if (!el) return;
+        const container = el.closest(`.${style.waMessages}`);
+        if (container && container.scrollHeight <= container.clientHeight + 8) return;
+        el.scrollIntoView({ behavior: "smooth", block: "end" });
     }, [currentMessages]);
 
     useEffect(() => {
@@ -111,56 +118,96 @@ export function Chat() {
         return () => unsub();
     }, [chatId, storeUser, id, adminAuth]);
 
+    async function ensureChatRoom(chatDocRef) {
+        const chatDoc = await getDoc(chatDocRef);
+        if (!chatDoc.exists()) {
+            const newChat = {
+                chatRoomId: chatId,
+                isRequested: "accepted",
+                users: [activeAdminParticipantId, otherUserId],
+                timestamp: serverTimestamp(),
+                unreadCountFrom: 0,
+                unreadCountTo: 0,
+            };
+            await setDoc(chatDocRef, newChat);
+            const newCreatedChat = await getDoc(chatDocRef);
+            const user = storeUser.find((u) => String(u._id) === String(otherUserId));
+            SetCurrentChat({ ...newCreatedChat.data(), user });
+        }
+    }
+
+    async function deliverChatMessage({ text, messageType, imageUrl = null }) {
+        if (!canSendMessages || !activeAdminParticipantId || !otherUserId) return false;
+        const chatDocRef = doc(db, "chats", chatId);
+        await ensureChatRoom(chatDocRef);
+        const newMessage = {
+            type: messageType,
+            lastMessageStatus: "Delivered",
+            imageUrl: imageUrl || null,
+            timestamp: Timestamp.fromDate(new Date()),
+            receiverId: otherUserId,
+            senderId: activeAdminParticipantId,
+            message: text,
+        };
+        const messagesCollectionRef = collection(db, "chats", chatId, "messages");
+        await addDoc(messagesCollectionRef, newMessage);
+        const lastMessage = text.trim() || (imageUrl ? "📷 Photo" : "");
+        await updateDoc(chatDocRef, {
+            lastMessage,
+            receiverId: otherUserId,
+            senderId: activeAdminParticipantId,
+        });
+        axios
+            .post(`${serverURL}/api/notification/chat`, {
+                message: lastMessage,
+                receiverId: otherUserId,
+                senderId: activeAdminParticipantId,
+            })
+            .catch((err) => console.log(err));
+        return true;
+    }
+
     async function sendMessage(e) {
         e.preventDefault();
-        if (!canSendMessages || !message.trim() || !activeAdminParticipantId || !otherUserId) return;
+        const text = message.trim();
+        if (!text || isSending || isUploading) return;
+        setIsSending(true);
         try {
-            const chatDocRef = doc(db, "chats", chatId);
-            const chatDoc = await getDoc(chatDocRef);
-            if (!chatDoc.exists()) {
-                const newChat = {
-                    chatRoomId: chatId,
-                    isRequested: "accepted",
-                    users: [activeAdminParticipantId, otherUserId],
-                    timestamp: serverTimestamp(),
-                    unreadCountFrom: 0,
-                    unreadCountTo: 0,
-                };
-                await setDoc(chatDocRef, newChat);
-                const newCreatedChat = await getDoc(chatDocRef);
-                const user = storeUser.find(
-                    (u) => String(u._id) === String(otherUserId),
-                );
-                SetCurrentChat({ ...newCreatedChat.data(), user });
-            }
-            const newMessage = {
-                type: "text",
-                lastMessageStatus: "Delivered",
-                imageUrl: null,
-                timestamp: Timestamp.fromDate(new Date()),
-                receiverId: otherUserId,
-                senderId: activeAdminParticipantId,
-                message,
-            };
-            const messagesCollectionRef = collection(db, "chats", chatId, "messages");
-            await addDoc(messagesCollectionRef, newMessage);
-            await updateDoc(chatDocRef, {
-                lastMessage: message,
-                receiverId: otherUserId,
-                senderId: activeAdminParticipantId,
-            });
-            axios
-                .post(`${serverURL}/api/notification/chat`, {
-                    message,
-                    receiverId: otherUserId,
-                    senderId: activeAdminParticipantId,
-                })
-                .catch((err) => console.log(err));
+            await deliverChatMessage({ text, messageType: "text" });
+            setMessage("");
         } catch (error) {
             console.log(error);
             toast.error("Something went wrong");
         } finally {
-            setMessage("");
+            setIsSending(false);
+        }
+    }
+
+    async function sendImageMessage(file, caption) {
+        if (isSending || isUploading) return false;
+        setIsUploading(true);
+        try {
+            const imageUrl = await uploadChatImage({
+                userId: activeAdminParticipantId,
+                chatRoomId: chatId,
+                file,
+            });
+            if (!imageUrl) {
+                toast.error("Failed to upload image");
+                return false;
+            }
+            await deliverChatMessage({
+                text: caption,
+                messageType: "image",
+                imageUrl,
+            });
+            return true;
+        } catch (error) {
+            console.log(error);
+            toast.error("Failed to send image");
+            return false;
+        } finally {
+            setIsUploading(false);
         }
     }
 
@@ -213,7 +260,8 @@ export function Chat() {
     const avatarUrl = canSendMessages ? currentChat?.user?.profileImageUrl : null;
 
     return (
-        <div className={style.waContainer}>
+        <div className={`wa-chat-page ${style.waInboxShell}`}>
+            <div className={style.waContainer}>
             <div className={style.waHeader}>
                 <div className={style.waHeaderLeft}>
                     <div className={style.waHeaderAvatar}>
@@ -263,7 +311,14 @@ export function Chat() {
                                     )}
                                     <div className={`${style.waBubble} ${isSent ? style.waBubbleSent : style.waBubbleReceived}`}>
                                         {item.imageUrl ? (
-                                            <img src={item.imageUrl} alt="chat_img" className={style.waBubbleImg} />
+                                            <>
+                                                <a href={item.imageUrl} target="_blank" rel="noopener noreferrer">
+                                                    <img src={item.imageUrl} alt="chat_img" className={style.waBubbleImg} />
+                                                </a>
+                                                {item.message ? (
+                                                    <span className={style.waBubbleText}>{item.message}</span>
+                                                ) : null}
+                                            </>
                                         ) : (
                                             <span className={style.waBubbleText}>{item.message}</span>
                                         )}
@@ -291,23 +346,19 @@ export function Chat() {
 
             {canSendMessages && (
                 <div className={style.waInputBar}>
-                    <form onSubmit={sendMessage} className={style.waInputForm}>
-                        <button type="button" className={style.waInputIcon}>
-                            <i className="bi bi-emoji-smile" />
-                        </button>
-                        <input
-                            type="text"
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Type a message"
-                            className={style.waInput}
+                    <form onSubmit={sendMessage}>
+                        <ChatComposer
+                            message={message}
+                            onMessageChange={setMessage}
+                            onSendText={sendMessage}
+                            onSendImage={sendImageMessage}
+                            isSending={isSending}
+                            isUploading={isUploading}
                         />
-                        <button type="submit" className={style.waSendBtn} disabled={!message.trim()}>
-                            <i className="bi bi-send-fill" />
-                        </button>
                     </form>
                 </div>
             )}
+            </div>
         </div>
     );
 }

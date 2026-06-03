@@ -11,6 +11,13 @@ import CryptoJS from "crypto-js";
 const serverURL = process.env.REACT_APP_SERVER_URL;
 const secretEnKey = process.env.REACT_APP_SECRET_ENC_KEY;
 
+function maskEmailForDisplay(email) {
+  if (!email || !email.includes("@")) return "your email";
+  const [local, domain] = email.split("@");
+  const visible = local.slice(0, Math.min(2, local.length));
+  return `${visible}${local.length > 2 ? "***" : "*"}@${domain}`;
+}
+
 function completeAdminLogin(dispatch, navigate, adminData) {
   const admin = CryptoJS.AES.encrypt(
     JSON.stringify(adminData),
@@ -56,7 +63,7 @@ export function Login() {
       if (response?.status === 200) {
         if (response.data.requiresOtp) {
           setOtpToken(response.data.otpToken);
-          setMaskedEmail(response.data.maskedEmail || loginData.email);
+          setMaskedEmail(maskEmailForDisplay(loginData.email));
           setOtp("");
           setStep("otp");
           toast.success(response.data.message || "Verification code sent");
@@ -143,6 +150,7 @@ export function Login() {
     setStep("credentials");
     setOtp("");
     setOtpToken("");
+    setMaskedEmail("");
   }
 
   return (

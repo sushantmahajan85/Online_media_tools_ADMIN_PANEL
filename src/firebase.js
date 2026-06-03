@@ -35,7 +35,8 @@
 //     credential: admin.credential.cert(serviceAccount)
 //   });
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore"
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 // import { getMessaging } from "firebase/messaging/sw";
 // import { getMessaging } from "firebase/messaging";
 const firebaseConfig = {
@@ -49,8 +50,9 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
-export const app =  initializeApp(firebaseConfig);
-export const db = getFirestore()
+export const app = initializeApp(firebaseConfig);
+export const db = getFirestore();
+export const storage = getStorage(app);
 // export const messaging = getMessaging(app);
 // // const analytics = getAnalytics(app);
 

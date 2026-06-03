@@ -7,6 +7,24 @@
     padding-top: 20px;
 }
 
+/* Chat page: single scroll inside messages, not the route container */
+.containerScroll:has(.wa-chat-page) {
+    overflow: hidden;
+    padding-top: 0;
+    display: flex;
+    flex-direction: column;
+    background: #e9edef;
+}
+
+.containerScroll:has(.wa-chat-page) .wrapper {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    max-width: none;
+}
+
 .containerScroll .wrapper {
     min-width: 0;
     max-width: 100%;

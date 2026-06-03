@@ -12,6 +12,7 @@ import {
 } from "../../Store/authSlice";
 import { DeleteModel } from "./DeleteModel";
 import { EditPost } from "./EditPost";
+import { PostViewModal } from "./PostViewModal";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 
@@ -38,7 +39,18 @@ export function Posts() {
   const [TotalPinned, setTotalPinned] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [expandedId, setExpandedId] = useState(null);
+  const [viewPost, setViewPost] = useState(null);
+  const [modalView, setModalView] = useState(false);
+
+  function openPostView(post) {
+    setViewPost(post);
+    setModalView(true);
+  }
+
+  function closePostView() {
+    setModalView(false);
+    setViewPost(null);
+  }
 
   useEffect(() => {
     const count = StorePinnedPosts.filter((p) => p.isPinnedT === true).length;
@@ -211,7 +223,8 @@ export function Posts() {
               </thead>
               <tbody>
                 {filtered.map((post, index) => {
-                  const isExpanded = expandedId === post._id;
+                  const showSeeMore =
+                    (post.postContent && post.postContent.length > 80) || !!post.postMediaUrl;
                   return (
                     <tr key={post._id} className={style.pstRow}>
                       {/* # */}
@@ -222,7 +235,14 @@ export function Posts() {
                       {/* Media */}
                       <td className={style.pstTd}>
                         {post.postMediaUrl ? (
-                          <img src={post.postMediaUrl} alt="media" className={style.pstThumb} />
+                          <button
+                            type="button"
+                            className={style.pstThumbBtn}
+                            onClick={() => openPostView(post)}
+                            title="View post"
+                          >
+                            <img src={post.postMediaUrl} alt="media" className={style.pstThumb} />
+                          </button>
                         ) : (
                           <span className={style.pstNoMedia}>
                             <i className="bi bi-image" />
@@ -233,16 +253,16 @@ export function Posts() {
                       {/* Content */}
                       <td className={style.pstTd}>
                         <div className={style.pstContentCell}>
-                          <p className={isExpanded ? style.pstContentFull : style.pstContentClamp}>
+                          <p className={style.pstContentClamp}>
                             {post.postContent || <span style={{ color: "#9ca3af" }}>No content</span>}
                           </p>
-                          {post.postContent && post.postContent.length > 80 && (
+                          {showSeeMore && (
                             <button
                               className={style.pstExpandBtn}
-                              onClick={() => setExpandedId(isExpanded ? null : post._id)}
+                              onClick={() => openPostView(post)}
                               type="button"
                             >
-                              {isExpanded ? "Show less" : "Show more"}
+                              See more
                             </button>
                           )}
                         </div>
@@ -357,6 +377,7 @@ export function Posts() {
         setDeletedId={setDeletedId}
       />
       <EditPost modalEdit={modalEdit} postData={postData} setmodalEdit={setmodalEdit} />
+      <PostViewModal isOpen={modalView} post={viewPost} onClose={closePostView} />
       <Loader loading={loading} />
     </>
   );
