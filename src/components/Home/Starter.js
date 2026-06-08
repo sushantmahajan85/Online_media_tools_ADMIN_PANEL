@@ -19,6 +19,8 @@ function formatDate() {
   });
 }
 
+const MAX_PINNED_POSTS = 5;
+
 const QUICK_LINKS = [
   { to: "/Admin/AdminDashboard/Users",            icon: "bi-people-fill",         label: "Manage Users",         color: "#2563eb", bg: "#eff6ff" },
   { to: "/Admin/AdminDashboard/Posts",            icon: "bi-file-earmark-text-fill", label: "Manage Posts",      color: "#16a34a", bg: "#dcfce7" },
@@ -130,7 +132,7 @@ const Starter = () => {
           </div>
           <div className={style.dashCardsRow}>
             <TopCards value={storePinnedPosts.length} label="Total Pinned Posts" icon="bi bi-pin-angle" color="amber" />
-            <TopCards value={5 - storePinnedPosts.length} label="Slots Available"   icon="bi bi-plus-circle" color="gray"  />
+            <TopCards value={Math.max(0, MAX_PINNED_POSTS - storePinnedPosts.length)} label="Slots Available" icon="bi bi-plus-circle" color="gray" />
           </div>
         </section>
 

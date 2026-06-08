@@ -3743,6 +3743,21 @@
   cursor: default;
 }
 
+/* Pin limit reached */
+.pstBtnPinLimit {
+  composes: pstBtnIcon;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.pstBtnPinLimit:hover {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+}
+
 /* LinkedIn */
 .pstBtnLinkedIn {
   composes: pstBtnIcon;
@@ -3760,10 +3775,16 @@
 /* LinkedIn done */
 .pstBtnLinkedInDone {
   composes: pstBtnIcon;
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #1d4ed8;
-  cursor: default;
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.pstBtnLinkedInDone:hover {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
 }
 
 /* Delete */
