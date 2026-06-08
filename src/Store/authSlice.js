@@ -110,32 +110,18 @@ const authSlice = createSlice({
       state.PinnedPosts = action.payload;
     },
     addPinnedPosts: (state, action) => {
-      const { postId, NewBumperPost, TotalPinned } = action.payload
+      const { postId, NewBumperPost } = action.payload;
 
       const newState = JSON.parse(JSON.stringify(state));
       const PostIndex = newState.AllPosts.findIndex((post) => post._id === postId);
-      if (TotalPinned === 5) {
-        const oldestPinnedPostIndex = newState.PinnedPosts.length - 1;
-
-        if (oldestPinnedPostIndex >= 0) {
-          const oldestPinnedPostId = newState.PinnedPosts[oldestPinnedPostIndex].postId;
-
-          const originalPostIndex = newState.AllPosts.findIndex((post) => post._id === oldestPinnedPostId);
-
-          if (originalPostIndex >= 0) {
-            newState.AllPosts[originalPostIndex].isPinned = false;
-          }
-
-          newState.PinnedPosts.splice(oldestPinnedPostIndex, 1);
-        }
-      }
       if (PostIndex >= 0) {
-        newState.AllPosts[PostIndex].isPinned = true
+        newState.AllPosts[PostIndex].isPinned = true;
       }
-      newState.PinnedPosts.unshift(NewBumperPost);
+      if (NewBumperPost) {
+        newState.PinnedPosts.unshift(NewBumperPost);
+      }
 
       return newState;
-
     },
     removePinnedPosts: (state, action) => {
       const { _id } = action.payload;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import style from "./ui.module.css";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -15,6 +15,7 @@ import { EditPost } from "./EditPost";
 import { PostViewModal } from "./PostViewModal";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
+const MAX_PINNED_POSTS = 5;
 
 function StatusBadge({ post }) {
   if (post.underApproval)
@@ -36,7 +37,6 @@ export function Posts() {
   const [pContent, setpContent] = useState("");
   const [modalEdit, setmodalEdit] = useState(false);
   const [postData, setpostData] = useState(null);
-  const [TotalPinned, setTotalPinned] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewPost, setViewPost] = useState(null);
@@ -52,10 +52,8 @@ export function Posts() {
     setViewPost(null);
   }
 
-  useEffect(() => {
-    const count = StorePinnedPosts.filter((p) => p.isPinnedT === true).length;
-    setTotalPinned(count);
-  }, [StorePinnedPosts]);
+  const pinnedCount = (StorePinnedPosts || []).length;
+  const pinLimitReached = pinnedCount >= MAX_PINNED_POSTS;
 
   const filtered = (StorePosts || []).filter((post) => {
     const q = search.toLowerCase();
@@ -88,17 +86,27 @@ export function Posts() {
     }
   }
 
+  function handlePinClick(post) {
+    if (post.isPinned) {
+      toast.info("Already pinned");
+      return;
+    }
+    if (pinLimitReached) {
+      toast.warning(`You can only pin up to ${MAX_PINNED_POSTS} posts. Unpin a post first.`);
+      return;
+    }
+    pinPost(post);
+  }
+
   async function pinPost(post) {
-    if (post.isPinned) { toast.info("Already pinned"); return; }
     try {
       setloading(true);
       const res = await axios.post(
-        `${serverURL}/api/PinnedPosts/${post._id}/add_Pinned_post`,
-        { TotalPinned }
+        `${serverURL}/api/PinnedPosts/${post._id}/add_Pinned_post`
       );
       if (res?.status === 200) {
         toast.success(res.data.message);
-        dispatch(addPinnedPosts({ postId: post._id, NewBumperPost: res.data.newBumperpost, TotalPinned }));
+        dispatch(addPinnedPosts({ postId: post._id, NewBumperPost: res.data.newBumperpost }));
         window.location.reload();
       }
     } catch (err) {
@@ -110,13 +118,28 @@ export function Posts() {
     }
   }
 
+  function handleLinkedInClick(post) {
+    if (post.addedToAdminLinkedin) {
+      toast.warning("This post is already shared on LinkedIn.");
+      return;
+    }
+    addToLinkedIn(post);
+  }
+
   async function addToLinkedIn(post) {
     try {
       setloading(true);
       const res = await axios.post(`${serverURL}/api/posts/${post._id}/admin-Linkedin`);
       if (res?.status === 200) {
-        toast.success(res.data.message);
-        dispatch(updatePostStatus({ _id: post._id, post: res.data.post }));
+        if (res.data.post) {
+          dispatch(updatePostStatus({ _id: post._id, post: res.data.post }));
+        }
+        const message = res.data.message || "";
+        if (message.toLowerCase().includes("already")) {
+          toast.warning(message);
+        } else {
+          toast.success(message);
+        }
       }
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to add to LinkedIn");
@@ -303,10 +326,22 @@ export function Posts() {
 
                           {/* Pin */}
                           <button
-                            className={post.isPinned ? style.pstBtnPinned : style.pstBtnPin}
-                            onClick={() => pinPost(post)}
+                            className={
+                              post.isPinned
+                                ? style.pstBtnPinned
+                                : pinLimitReached
+                                  ? style.pstBtnPinLimit
+                                  : style.pstBtnPin
+                            }
+                            onClick={() => handlePinClick(post)}
                             type="button"
-                            title={post.isPinned ? "Already pinned" : "Pin post"}
+                            title={
+                              post.isPinned
+                                ? "Already pinned"
+                                : pinLimitReached
+                                  ? `Pin limit reached (${MAX_PINNED_POSTS} max)`
+                                  : "Pin post"
+                            }
                           >
                             <i className={`bi ${post.isPinned ? "bi-pin-fill" : "bi-pin"}`} />
                           </button>
@@ -324,9 +359,9 @@ export function Posts() {
                           {/* LinkedIn */}
                           <button
                             className={post.addedToAdminLinkedin ? style.pstBtnLinkedInDone : style.pstBtnLinkedIn}
-                            onClick={() => addToLinkedIn(post)}
+                            onClick={() => handleLinkedInClick(post)}
                             type="button"
-                            title={post.addedToAdminLinkedin ? "On LinkedIn" : "Add to LinkedIn"}
+                            title={post.addedToAdminLinkedin ? "Already shared on LinkedIn" : "Share on LinkedIn"}
                           >
                             <i className="bi bi-linkedin" />
                           </button>
