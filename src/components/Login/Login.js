@@ -6,6 +6,7 @@ import "react-toastify/scss/main.scss";
 import style from "./login.module.css";
 import { useDispatch } from "react-redux";
 import { login } from "../../Store/authSlice";
+import { getAdminHomePath } from "../../utils/adminProfile";
 import CryptoJS from "crypto-js";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
@@ -31,7 +32,7 @@ function completeAdminLogin(dispatch, navigate, adminData) {
     }),
   );
   dispatch(login(adminData));
-  navigate("/Admin");
+  navigate(getAdminHomePath(adminData));
 }
 
 export function Login() {

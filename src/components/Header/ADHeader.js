@@ -5,7 +5,10 @@ import { logout, selectAdmin, selecteUsers } from "../../Store/authSlice";
 import { toast } from "react-toastify";
 import style from "./header.module.css";
 import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
-import { resolveAdminProfileUser } from "../../utils/adminProfile";
+import {
+  resolveAdminProfileUser,
+  SECONDARY_ADMIN_HOME_PATH,
+} from "../../utils/adminProfile";
 
 function resolvePageInfo(pathname, storeUsers) {
   const path = pathname.replace(/^\/Admin/, "");
@@ -27,6 +30,28 @@ function resolvePageInfo(pathname, storeUsers) {
         { label: "Chats", to: `/Admin/AdminDashboard/UserDetails/${chatMatch[1]}/UserChats` },
         { label: "Chat" },
       ].filter(Boolean),
+    };
+  }
+
+  const allChatMatch = path.match(/\/AdminDashboard\/Chats\/([^/]+)$/);
+  if (allChatMatch) {
+    return {
+      title: "Chat",
+      crumbs: [
+        { label: "All Chats", to: "/Admin/AdminDashboard/Chats" },
+        { label: "Conversation" },
+      ],
+    };
+  }
+
+  const adminChatMatch = path.match(/\/AdminDashboard\/AdminChats\/([^/]+)$/);
+  if (adminChatMatch) {
+    return {
+      title: "Admin Chat",
+      crumbs: [
+        { label: "Admin Chats", to: "/Admin/AdminDashboard/AdminChats" },
+        { label: "Conversation" },
+      ],
     };
   }
 
@@ -74,6 +99,10 @@ function resolvePageInfo(pathname, storeUsers) {
     "/AdminDashboard/Users": { title: "Users", crumbs: [{ label: "Users" }] },
     "/AdminDashboard/Posts": { title: "Posts", crumbs: [{ label: "Posts" }] },
     "/AdminDashboard/Chats": { title: "All Chats", crumbs: [{ label: "Chats" }] },
+    "/AdminDashboard/AdminChats": {
+      title: "Admin Chats",
+      crumbs: [{ label: "Admin Chats" }],
+    },
     "/AdminDashboard/BumperPost": { title: "Pinned Posts", crumbs: [{ label: "Pinned Posts" }] },
     "/AdminDashboard/ReportRequests": { title: "Report Requests", crumbs: [{ label: "Reported" }] },
     "/AdminDashboard/sendnotification": { title: "Send Notification", crumbs: [{ label: "Notification" }] },
@@ -142,8 +171,11 @@ const Header = () => {
         <div className={style.titleBlock}>
           <span className={style.pageTitle}>{title}</span>
           <nav className={style.breadcrumb} aria-label="breadcrumb">
-            <Link to="/Admin/AdminDashboard/starter" className={style.breadcrumbHome}>
-              Dashboard
+            <Link
+              to={canAccessAdminChats ? "/Admin/AdminDashboard/starter" : SECONDARY_ADMIN_HOME_PATH}
+              className={style.breadcrumbHome}
+            >
+              {canAccessAdminChats ? "Dashboard" : "Chats"}
             </Link>
             {crumbs.map((crumb, i) => (
               <React.Fragment key={i}>
@@ -167,16 +199,6 @@ const Header = () => {
         <button className={style.iconBtn} type="button" title="Notifications">
           <i className="bi bi-bell" />
         </button>
-
-        {canAccessAdminChats && (
-          <Link
-            to="/Admin/AdminDashboard/Chats"
-            className={style.iconBtn}
-            title="Chats"
-          >
-            <i className="bi bi-chat-dots" />
-          </Link>
-        )}
 
         <div className={style.divider} />
 
@@ -213,14 +235,16 @@ const Header = () => {
                 {email && <div className={style.dropdownEmail}>{email}</div>}
               </div>
 
-              <Link
-                to="/Admin/AdminDashboard/Profile"
-                className={style.dropdownItem}
-                onClick={() => setDropdownOpen(false)}
-              >
-                <i className="bi bi-person-circle" />
-                My Profile
-              </Link>
+              {canAccessAdminChats && (
+                <Link
+                  to="/Admin/AdminDashboard/Profile"
+                  className={style.dropdownItem}
+                  onClick={() => setDropdownOpen(false)}
+                >
+                  <i className="bi bi-person-circle" />
+                  My Profile
+                </Link>
+              )}
 
               <button
                 className={`${style.dropdownItem} ${style.dropdownLogout}`}

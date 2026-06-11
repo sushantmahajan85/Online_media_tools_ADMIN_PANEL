@@ -15,7 +15,7 @@ import { EditPost } from "./EditPost";
 import { PostViewModal } from "./PostViewModal";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
-const MAX_PINNED_POSTS = 5;
+const MAX_PINNED_POSTS = 10;
 
 function StatusBadge({ post }) {
   if (post.underApproval)
@@ -68,12 +68,17 @@ export function Posts() {
     return matchSearch && matchStatus;
   });
 
-  async function toggleApprove(post) {
+  async function updateApproveStatus(post, appproveStatus) {
+    const isApproved = post.isApproved && !post.underApproval;
+    const isDisapproved = !post.isApproved && !post.underApproval;
+    if (appproveStatus && isApproved) return;
+    if (!appproveStatus && isDisapproved) return;
+
     try {
       setloading(true);
       const res = await axios.post(
         `${serverURL}/api/posts/${post._id}/Approve_post`,
-        { appproveStatus: !post.isApproved }
+        { appproveStatus }
       );
       if (res?.status === 200) {
         toast.success(res.data.message);
@@ -248,6 +253,8 @@ export function Posts() {
                 {filtered.map((post, index) => {
                   const showSeeMore =
                     (post.postContent && post.postContent.length > 80) || !!post.postMediaUrl;
+                  const isApproved = post.isApproved && !post.underApproval;
+                  const isDisapproved = !post.isApproved && !post.underApproval;
                   return (
                     <tr key={post._id} className={style.pstRow}>
                       {/* # */}
@@ -314,14 +321,24 @@ export function Posts() {
                       {/* Actions */}
                       <td className={style.pstTd}>
                         <div className={style.pstActions}>
-                          {/* Approve / Disapprove */}
                           <button
-                            className={post.isApproved ? style.pstBtnDisapprove : style.pstBtnApprove}
-                            onClick={() => toggleApprove(post)}
+                            className={style.pstBtnApprove}
+                            onClick={() => updateApproveStatus(post, true)}
                             type="button"
-                            title={post.isApproved ? "Disapprove" : "Approve"}
+                            title="Approve"
+                            disabled={isApproved}
                           >
-                            <i className={`bi ${post.isApproved ? "bi-x-circle" : "bi-check-circle"}`} />
+                            <i className="bi bi-check-circle" />
+                          </button>
+
+                          <button
+                            className={style.pstBtnDisapprove}
+                            onClick={() => updateApproveStatus(post, false)}
+                            type="button"
+                            title="Disapprove"
+                            disabled={isDisapproved}
+                          >
+                            <i className="bi bi-x-circle" />
                           </button>
 
                           {/* Pin */}

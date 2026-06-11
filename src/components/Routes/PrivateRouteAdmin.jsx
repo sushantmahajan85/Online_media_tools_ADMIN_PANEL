@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import {  useDispatch } from "react-redux";
-import { login , logout } from '../../Store/authSlice';
+import { useDispatch, useSelector } from "react-redux";
+import { login, logout, selectAdmin } from '../../Store/authSlice';
+import {
+  isAdminRouteAllowed,
+  getAdminRouteRedirect,
+} from '../../utils/adminProfile';
 import CryptoJS from 'crypto-js';
 
 const secretEnKey = process.env.REACT_APP_SECRET_ENC_KEY
@@ -10,9 +14,10 @@ const secretEnKey = process.env.REACT_APP_SECRET_ENC_KEY
 
 export const PrivateRouteAdmin = ({ element }) => {
   const [session, setSession] = useState(false);
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+  const { pathname } = useLocation();
+  const adminAuth = useSelector(selectAdmin);
 
   // useEffect(() => {
   //   async function checkuser() {
@@ -106,6 +111,12 @@ export const PrivateRouteAdmin = ({ element }) => {
 
   }, [dispatch, navigate]);
 
-  return session ? element : null;
+  if (!session) return null;
+
+  if (!isAdminRouteAllowed(adminAuth, pathname)) {
+    return <Navigate to={getAdminRouteRedirect(adminAuth)} replace />;
+  }
+
+  return element;
 };
 

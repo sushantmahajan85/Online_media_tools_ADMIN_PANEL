@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Modal } from "reactstrap";
 import { Loader } from "../Loader/loader";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { updatePost } from "../../Store/authSlice";
+import { updatePost, selectAdmin } from "../../Store/authSlice";
 import imageCompression from "browser-image-compression";
 import style from "./ui.module.css";
 
@@ -18,6 +18,7 @@ const TAG_OPTIONS = [
 
 export function EditPost({ modalEdit, postData, setmodalEdit }) {
   const dispatch = useDispatch();
+  const admin = useSelector(selectAdmin);
   const [newPost, setNewPost] = useState(null);
   const [myFile, setMyFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -48,6 +49,9 @@ export function EditPost({ modalEdit, postData, setmodalEdit }) {
     formData.append("postContent", newPost.postContent);
     formData.append("postDescription", newPost.postDescription || "");
     formData.append("tag", newPost.tag || "");
+    if (admin?._id) {
+      formData.append("editorUserId", admin._id);
+    }
 
     if (myFile) {
       const compressed = await imageCompression(myFile, {

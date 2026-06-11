@@ -19,12 +19,11 @@ function formatDate() {
   });
 }
 
-const MAX_PINNED_POSTS = 5;
+const MAX_PINNED_POSTS = 10;
 
 const QUICK_LINKS = [
   { to: "/Admin/AdminDashboard/Users",            icon: "bi-people-fill",         label: "Manage Users",         color: "#2563eb", bg: "#eff6ff" },
   { to: "/Admin/AdminDashboard/Posts",            icon: "bi-file-earmark-text-fill", label: "Manage Posts",      color: "#16a34a", bg: "#dcfce7" },
-  { to: "/Admin/AdminDashboard/Chats",            icon: "bi-chat-dots-fill",      label: "All Chats",            color: "#7c3aed", bg: "#f5f3ff" },
   { to: "/Admin/AdminDashboard/BumperPost",       icon: "bi-pin-angle-fill",      label: "Pinned Posts",         color: "#d97706", bg: "#fffbeb" },
   { to: "/Admin/AdminDashboard/ReportRequests",   icon: "bi-flag-fill",           label: "Report Requests",      color: "#e11d48", bg: "#fff1f2" },
   { to: "/Admin/AdminDashboard/sendnotification", icon: "bi-bell-fill",           label: "Send Notification",    color: "#0891b2", bg: "#ecfeff" },
