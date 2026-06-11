@@ -3700,10 +3700,15 @@
   color: #16a34a;
 }
 
-.pstBtnApprove:hover {
+.pstBtnApprove:hover:not(:disabled) {
   background: #16a34a;
   color: #fff;
   border-color: #16a34a;
+}
+
+.pstBtnApprove:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Disapprove */
@@ -3714,10 +3719,15 @@
   color: #e11d48;
 }
 
-.pstBtnDisapprove:hover {
+.pstBtnDisapprove:hover:not(:disabled) {
   background: #e11d48;
   color: #fff;
   border-color: #e11d48;
+}
+
+.pstBtnDisapprove:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Pin */
@@ -4034,6 +4044,12 @@
   line-height: 1.5;
 }
 
+.rrDateTime {
+  font-size: 12.5px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
 .rrStatusPending {
   display: inline-flex;
   padding: 3px 10px;
@@ -4068,6 +4084,21 @@
   color: #be123c;
   border: 1px solid #fecdd3;
   white-space: nowrap;
+}
+
+.rrActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.rrBtnApprove {
+  composes: pstBtnApprove;
+}
+
+.rrBtnDeny {
+  composes: pstBtnDisapprove;
 }
 
 /* Skeleton */

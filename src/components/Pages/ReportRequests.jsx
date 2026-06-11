@@ -11,33 +11,75 @@ function getInitials(user) {
   return `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "?";
 }
 
+function formatReportDateTime(raw) {
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (isNaN(d)) return "—";
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 export function ReportRequests() {
   const [reportedUsers, setReportedUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    async function fetchReportedUsers() {
-      setLoading(true);
-      try {
-        const res = await axios.get(`${serverURL}/api/users/reportedUsers`);
-        setReportedUsers(res.data.reportedUsers);
-      } catch (error) {
-        toast.error("Failed to fetch report requests");
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchReportedUsers();
   }, []);
 
-  const filtered = reportedUsers.filter((r) => {
-    const q = search.toLowerCase();
-    const reported = `${r.reportedUserId?.firstName || ""} ${r.reportedUserId?.lastName || ""}`.toLowerCase();
-    const reporter = `${r.reporterUserId?.firstName || ""} ${r.reporterUserId?.lastName || ""}`.toLowerCase();
-    const reason = (r.reason || "").toLowerCase();
-    return reported.includes(q) || reporter.includes(q) || reason.includes(q);
-  });
+  async function fetchReportedUsers() {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${serverURL}/api/users/reportedUsers`);
+      setReportedUsers(res.data.reportedUsers);
+    } catch (error) {
+      toast.error("Failed to fetch report requests");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateReportStatus(reportId, action) {
+    try {
+      setLoading(true);
+      const res = await axios.post(`${serverURL}/api/users/reportedUser/changeStatus`, {
+        reportId,
+        action,
+      });
+      if (res?.status === 200) {
+        toast.success(res.data.message);
+        setReportedUsers((prev) =>
+          prev.map((r) => (r._id === reportId ? { ...r, status: action } : r))
+        );
+      }
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to update report status");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function normalizeStatus(status) {
+    if (status === "Accepted") return "Approved";
+    return status || "Pending";
+  }
+
+  const filtered = reportedUsers
+    .filter((r) => {
+      const q = search.toLowerCase();
+      const reported = `${r.reportedUserId?.firstName || ""} ${r.reportedUserId?.lastName || ""}`.toLowerCase();
+      const reporter = `${r.reporterUserId?.firstName || ""} ${r.reporterUserId?.lastName || ""}`.toLowerCase();
+      const reason = (r.reason || "").toLowerCase();
+      return reported.includes(q) || reporter.includes(q) || reason.includes(q);
+    })
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
   return (
     <>
@@ -87,7 +129,9 @@ export function ReportRequests() {
                   <th className={style.rrTh}>Reported User</th>
                   <th className={style.rrTh}>Reporting User</th>
                   <th className={style.rrTh}>Reason</th>
+                  <th className={style.rrTh} style={{ width: 160 }}>Reported At</th>
                   <th className={style.rrTh} style={{ width: 100, textAlign: "center" }}>Status</th>
+                  <th className={style.rrTh} style={{ width: 100, textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,12 +152,19 @@ export function ReportRequests() {
                         </div>
                       </td>
                       <td><div className={style.rrSkeleton} style={{ width: 200 }} /></td>
+                      <td><div className={style.rrSkeleton} style={{ width: 120 }} /></td>
                       <td><div className={style.rrSkeleton} style={{ width: 60, margin: "0 auto" }} /></td>
+                      <td><div className={style.rrSkeleton} style={{ width: 72, margin: "0 auto" }} /></td>
                     </tr>
                   ))}
 
                 {!loading &&
-                  filtered.map(({ _id, reason, reportedUserId, reporterUserId, status }, index) => (
+                  filtered.map(({ _id, reason, reportedUserId, reporterUserId, status, createdAt }, index) => {
+                    const reportStatus = normalizeStatus(status);
+                    const isApproved = reportStatus === "Approved";
+                    const isDenied = reportStatus === "Denied";
+
+                    return (
                     <tr key={_id} className={style.rrRow}>
                       <td className={style.rrTd} style={{ color: "#9ca3af", fontSize: 13 }}>
                         {index + 1}
@@ -162,22 +213,52 @@ export function ReportRequests() {
                         <span className={style.rrReason}>{reason || "—"}</span>
                       </td>
 
+                      {/* Reported at */}
+                      <td className={style.rrTd}>
+                        <span className={style.rrDateTime}>{formatReportDateTime(createdAt)}</span>
+                      </td>
+
                       {/* Status */}
                       <td className={style.rrTd} style={{ textAlign: "center" }}>
                         <span
                           className={
-                            status === "Accepted"
+                            isApproved
                               ? style.rrStatusAccepted
-                              : status === "Denied"
+                              : isDenied
                               ? style.rrStatusDenied
                               : style.rrStatusPending
                           }
                         >
-                          {status || "Pending"}
+                          {reportStatus}
                         </span>
                       </td>
+
+                      {/* Actions */}
+                      <td className={style.rrTd}>
+                        <div className={style.rrActions}>
+                          <button
+                            className={style.rrBtnApprove}
+                            onClick={() => updateReportStatus(_id, "Approved")}
+                            type="button"
+                            title="Approve report"
+                            disabled={isApproved}
+                          >
+                            <i className="bi bi-check-circle" />
+                          </button>
+                          <button
+                            className={style.rrBtnDeny}
+                            onClick={() => updateReportStatus(_id, "Denied")}
+                            type="button"
+                            title="Deny report"
+                            disabled={isDenied}
+                          >
+                            <i className="bi bi-x-circle" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
               </tbody>
             </table>
           )}

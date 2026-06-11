@@ -5,7 +5,6 @@ import { useSelector } from "react-redux";
 import axios from "axios";
 import { selecteUsers } from "../../Store/authSlice";
 import { displayText, formatJoiningDateTime } from "../../utils/userDisplay";
-import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
 import style from "./ui.module.css";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
@@ -36,7 +35,6 @@ function InfoCard({ title, icon, children }) {
 
 export function UserDetailpage() {
   const storeUser = useSelector(selecteUsers);
-  const { canAccessAdminChats } = useAdminMongoProfile();
   const { id } = useParams();
   const [user, setUser] = useState();
   const [loadingUser, setLoadingUser] = useState(false);
@@ -214,20 +212,6 @@ export function UserDetailpage() {
           </Row>
 
           <Row className="g-3 pb-4">
-            {canAccessAdminChats && (
-              <Col xs={12} sm={6} md={4} lg={3}>
-                <Link
-                  to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats`}
-                  className={style.udpActionCard}
-                >
-                  <div className={`${style.udpActionIcon} ${style.udpActionIconChats}`}>
-                    <img src="/chats.png" alt="" width={28} height={28} />
-                  </div>
-                  <span className={style.udpActionLabel}>Chats</span>
-                  <span className={`bi bi-arrow-right-short ${style.udpActionArrow}`} />
-                </Link>
-              </Col>
-            )}
             <Col xs={12} sm={6} md={4} lg={3}>
               <Link
                 to={`/Admin/AdminDashboard/UserDetails/${id}/Posts`}

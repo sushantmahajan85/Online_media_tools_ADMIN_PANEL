@@ -39,7 +39,6 @@ export function AdminDetailpage() {
 
   const role = getAdminRole(adminAuth, user);
   const roleLabel = getAdminRoleLabel(role);
-  const canAccessAdminChats = !isSecondaryAdmin(adminAuth, user);
   const profileId = getAdminProfileTargetId(adminAuth, user) || user?._id;
 
   useEffect(() => {
@@ -169,15 +168,6 @@ export function AdminDetailpage() {
         </div>
 
         <div className={style.adpProfileActions}>
-          {canAccessAdminChats && profileId && (
-            <Link
-              to={`/Admin/AdminDashboard/UserDetails/${profileId}/UserChats`}
-              className={`${style.adpActionBtn} ${style.adpActionBtnPrimary}`}
-            >
-              <i className="bi bi-chat-dots" />
-              Chats
-            </Link>
-          )}
           {profileId && (
             <Link
               to={`/Admin/AdminDashboard/UserDetails/${profileId}/Posts`}
@@ -315,22 +305,6 @@ export function AdminDetailpage() {
             Quick Access
           </div>
           <div className={style.adpQuickGrid}>
-            {canAccessAdminChats && profileId && (
-              <Link
-                to={`/Admin/AdminDashboard/UserDetails/${profileId}/UserChats`}
-                className={style.adpQuickCard}
-              >
-                <div className={`${style.adpQuickIcon} ${style.adpQuickIconBlue}`}>
-                  <i className="bi bi-chat-dots-fill" />
-                </div>
-                <div>
-                  <div>Chats</div>
-                  <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginTop: 2 }}>
-                    View all chats
-                  </div>
-                </div>
-              </Link>
-            )}
             {profileId && (
               <Link
                 to={`/Admin/AdminDashboard/UserDetails/${profileId}/Posts`}

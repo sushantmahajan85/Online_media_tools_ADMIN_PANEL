@@ -30,6 +30,17 @@ export function getAdminChatParticipantId(adminAuth, participantIds = []) {
   );
 }
 
+/** Admin account id in an admin↔user chat room (for secondary admin replies) */
+export function getAdminUserChatSupportId(
+  participantIds = [],
+  adminIds = new Set([PRIMARY_SUPPORT_ADMIN_ID]),
+) {
+  return (
+    participantIds.find((pid) => adminIds.has(String(pid))) ||
+    PRIMARY_SUPPORT_ADMIN_ID
+  );
+}
+
 export function getAdminRole(adminAuth, profileUser) {
   return profileUser?.role || adminAuth?.role || null;
 }
@@ -94,4 +105,59 @@ export function getAdminRoleLabel(role) {
 
 export function getAdminBearerToken(adminAuth) {
   return adminAuth?.jwtadmintoken || null;
+}
+
+export const SECONDARY_ADMIN_HOME_PATH = "/Admin/AdminDashboard/Chats";
+export const SECONDARY_ADMIN_USER_CHATS_PATH =
+  "/Admin/AdminDashboard/AdminChats";
+export const PRIMARY_ADMIN_HOME_PATH = "/Admin/AdminDashboard/starter";
+
+export function getSecondaryAllChatLink(chatId) {
+  return `${SECONDARY_ADMIN_HOME_PATH}/${chatId}`;
+}
+
+export function getSecondaryAdminUserChatLink(chatId) {
+  return `${SECONDARY_ADMIN_USER_CHATS_PATH}/${chatId}`;
+}
+
+export function isPrimaryAdminChatRoute(pathname) {
+  const normalized = (pathname || "").replace(/\/+$/, "") || "/";
+  return /^\/Admin\/AdminDashboard\/UserDetails\/[^/]+\/UserChats/.test(
+    normalized,
+  );
+}
+
+export function isSecondaryAdminChatRoute(pathname) {
+  const normalized = (pathname || "").replace(/\/+$/, "") || "/";
+
+  if (
+    normalized === SECONDARY_ADMIN_HOME_PATH ||
+    normalized === SECONDARY_ADMIN_USER_CHATS_PATH
+  ) {
+    return true;
+  }
+
+  return (
+    /^\/Admin\/AdminDashboard\/Chats\/[^/]+$/.test(normalized) ||
+    /^\/Admin\/AdminDashboard\/AdminChats\/[^/]+$/.test(normalized)
+  );
+}
+
+export function isAdminRouteAllowed(adminAuth, pathname) {
+  if (isSecondaryAdmin(adminAuth)) {
+    return isSecondaryAdminChatRoute(pathname);
+  }
+  return (
+    !isPrimaryAdminChatRoute(pathname) && !isSecondaryAdminChatRoute(pathname)
+  );
+}
+
+export function getAdminRouteRedirect(adminAuth) {
+  return isSecondaryAdmin(adminAuth)
+    ? SECONDARY_ADMIN_HOME_PATH
+    : PRIMARY_ADMIN_HOME_PATH;
+}
+
+export function getAdminHomePath(adminAuth) {
+  return getAdminRouteRedirect(adminAuth);
 }

@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { logout } from "../../Store/authSlice";
 import { toast } from "react-toastify";
 import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
+import { SECONDARY_ADMIN_USER_CHATS_PATH } from "../../utils/adminProfile";
 
 const NAV_GROUPS = [
   {
@@ -30,6 +31,11 @@ const NAV_GROUPS = [
     label: "Communication",
     items: [
       { to: "/Admin/AdminDashboard/Chats", icon: "bi-chat-dots", label: "All Chats" },
+      {
+        to: SECONDARY_ADMIN_USER_CHATS_PATH,
+        icon: "bi-headset",
+        label: "Admin Chats",
+      },
       { to: "/Admin/AdminDashboard/sendnotification", icon: "bi-bell", label: "Send Notification" },
     ],
   },
@@ -41,6 +47,8 @@ const NAV_GROUPS = [
     ],
   },
 ];
+
+const PRIMARY_CHATS_PATH = "/Admin/AdminDashboard/Chats";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
@@ -102,28 +110,47 @@ const Sidebar = () => {
         </button>
       </div>
 
-      <Link to="/Admin/AdminDashboard/Profile" className={style.profileChip}>
-        <div className={style.profileAvatar}>
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={fullName} className={style.profileAvatarImg} />
-          ) : (
-            <span className={style.profileAvatarFallback}>{initials}</span>
-          )}
+      {canAccessAdminChats ? (
+        <Link to="/Admin/AdminDashboard/Profile" className={style.profileChip}>
+          <div className={style.profileAvatar}>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={fullName} className={style.profileAvatarImg} />
+            ) : (
+              <span className={style.profileAvatarFallback}>{initials}</span>
+            )}
+          </div>
+          <div className={style.profileInfo}>
+            <span className={style.profileName}>{fullName}</span>
+            <span className={style.profileRole}>{roleLabel}</span>
+          </div>
+          <i className="bi bi-chevron-right" style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0 }} />
+        </Link>
+      ) : (
+        <div className={style.profileChip}>
+          <div className={style.profileAvatar}>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={fullName} className={style.profileAvatarImg} />
+            ) : (
+              <span className={style.profileAvatarFallback}>{initials}</span>
+            )}
+          </div>
+          <div className={style.profileInfo}>
+            <span className={style.profileName}>{fullName}</span>
+            <span className={style.profileRole}>{roleLabel}</span>
+          </div>
         </div>
-        <div className={style.profileInfo}>
-          <span className={style.profileName}>{fullName}</span>
-          <span className={style.profileRole}>{roleLabel}</span>
-        </div>
-        <i className="bi bi-chevron-right" style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0 }} />
-      </Link>
+      )}
 
       <nav className={style.nav}>
         {NAV_GROUPS.map((group) => {
-          const items = group.items.filter(
-            (item) =>
-              canAccessAdminChats ||
-              item.to !== "/Admin/AdminDashboard/Chats",
-          );
+          const items = group.items.filter((item) => {
+            const isAllChats = item.to === PRIMARY_CHATS_PATH;
+            const isAdminChats = item.to === SECONDARY_ADMIN_USER_CHATS_PATH;
+            if (canAccessAdminChats) {
+              return !isAllChats && !isAdminChats;
+            }
+            return isAllChats || isAdminChats;
+          });
           if (items.length === 0) return null;
           return (
           <div key={group.label} className={style.navGroup}>

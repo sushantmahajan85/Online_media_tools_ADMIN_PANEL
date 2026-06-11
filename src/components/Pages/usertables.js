@@ -2,13 +2,11 @@ import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import "react-dropdown/style.css";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Button, CardBody, Input, Table } from "reactstrap";
-import { allusers, selecteUsers, selectAdmin } from "../../Store/authSlice";
+import { allusers, selecteUsers } from "../../Store/authSlice";
 import { displayText, formatJoiningDate } from "../../utils/userDisplay";
-import { getAdminMongoUserId } from "../../utils/adminProfile";
-import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
 import { PRIMARY_SUPPORT_ADMIN_ID } from "../../constants/admin";
 import { DeleteModel } from "./DeleteModel";
 import style from "./ui.module.css";
@@ -27,13 +25,9 @@ function userDisplayName(tdata) {
 const ProjectTables = () => {
   const dispatch = useDispatch();
   const storeUsers = useSelector(selecteUsers);
-  const adminAuth = useSelector(selectAdmin);
-  const { canAccessAdminChats } = useAdminMongoProfile();
-  const activeAdminId = getAdminMongoUserId(adminAuth) || EXCLUDED_ADMIN_ID;
   const [deltedId, setDeletedId] = useState();
   const [deleteWhatUsers, setdeleteWhatUsers] = useState("");
   const [pContent, setpContent] = useState();
-  const navigate = useNavigate();
   const [currentData, setcurrentData] = useState();
   const [modal, setModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,14 +74,6 @@ const ProjectTables = () => {
       );
     });
   }, [currentData, searchQuery]);
-
-  async function handleUserChat(userId) {
-    const chatRoomUsers = [activeAdminId, userId].sort();
-    const chatRoomId = chatRoomUsers.join("_");
-    navigate(
-      `/Admin/AdminDashboard/UserDetails/${activeAdminId}/UserChats/${chatRoomId}/Chat`,
-    );
-  }
 
   return (
     <div className={style.usersPageShell}>
@@ -149,7 +135,6 @@ const ProjectTables = () => {
               <col className={style.usersColDevice} />
               <col className={style.usersColJoined} />
               <col className={style.usersColAction} />
-              {canAccessAdminChats && <col className={style.usersColChat} />}
               <col className={style.usersColSuspend} />
             </colgroup>
             <thead>
@@ -161,9 +146,6 @@ const ProjectTables = () => {
                 <th>Device</th>
                 <th>Joined</th>
                 <th className={style.usersActionCol}>Del</th>
-                {canAccessAdminChats && (
-                  <th className={style.usersChatCol}>Chat</th>
-                )}
                 <th className={style.usersSuspendCol}>Status</th>
               </tr>
             </thead>
@@ -289,24 +271,6 @@ const ProjectTables = () => {
                       <i className="bi bi-trash3" />
                     </button>
                   </td>
-
-                  {/* Chat */}
-                  {canAccessAdminChats && (
-                    <td className={`${style.usersChatCol} ${style.usersTableActions}`}>
-                      {tdata.isverified ? (
-                        <button
-                          type="button"
-                          className={style.usersIconBtnChat}
-                          aria-label="Open chat"
-                          onClick={() => handleUserChat(tdata._id)}
-                        >
-                          <i className="bi bi-chat-dots-fill" />
-                        </button>
-                      ) : (
-                        <span className={style.usersCellMuted}>—</span>
-                      )}
-                    </td>
-                  )}
 
                   {/* Suspend */}
                   <td className={`${style.usersSuspendCol} ${style.usersTableActions}`}>

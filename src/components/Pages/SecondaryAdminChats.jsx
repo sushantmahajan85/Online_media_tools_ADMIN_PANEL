@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
   collection,
   getDocs,
@@ -9,72 +8,33 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { db } from "../../firebase";
-import { selecteUsers } from "../../Store/authSlice";
-import { useAdminMongoProfile } from "../../hooks/useAdminMongoProfile";
-import { getSecondaryAllChatLink } from "../../utils/adminProfile";
+import { selectAdmin, selecteUsers } from "../../Store/authSlice";
 import {
-  buildUserMapFromStore,
+  getAdminMongoUserId,
+  getSecondaryAdminUserChatLink,
+} from "../../utils/adminProfile";
+import {
   chatDocToRow,
-  fetchUsersByIds,
-  hasKnownParticipants,
+  enrichChatRows,
+  filterKnownChats,
+  getBlockedChatParticipantIds,
+  isAdminUserChat,
 } from "../../utils/userChatMonitor";
+import axios from "axios";
 import style from "./ui.module.css";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 const CHATS_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 400;
 
-function filterKnownChats(chats) {
-  return chats.filter(hasKnownParticipants);
-}
-
-function displayName(user) {
-  if (!user) return null;
-  const full = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-  return full || user.email || user.mobileNumber || null;
-}
-
-async function enrichRows(rows, forSecondaryAdmin, storeUsers) {
-  const userIds = new Set();
-  rows.forEach((row) => {
-    row.participants?.forEach((id) => userIds.add(String(id)));
-    if (row.senderId) userIds.add(String(row.senderId));
-    if (row.receiverId) userIds.add(String(row.receiverId));
-  });
-
-  const userMap = await fetchUsersByIds(
-    [...userIds],
-    buildUserMapFromStore(storeUsers),
-  );
-
-  return rows
-    .map((row) => {
-      const [p1, p2] = row.participants || [];
-      const senderName =
-        displayName(userMap.get(String(p1))) ||
-        displayName(userMap.get(String(row.senderId))) ||
-        "Unknown";
-      const receiverName =
-        displayName(userMap.get(String(p2))) ||
-        displayName(userMap.get(String(row.receiverId))) ||
-        "Unknown";
-
-      return {
-        ...row,
-        senderName,
-        receiverName,
-        chatLink: forSecondaryAdmin
-          ? getSecondaryAllChatLink(row.chatId)
-          : `/Admin/AdminDashboard/UserDetails/${row.receiverId || p2}/UserChats/${row.chatId}/Chat`,
-      };
-    })
-    .filter(hasKnownParticipants);
-}
-
-export function AllChats() {
+export function SecondaryAdminChats() {
   const storeUsers = useSelector(selecteUsers);
-  const { canAccessAdminChats } = useAdminMongoProfile();
-  const forSecondaryAdmin = !canAccessAdminChats;
+  const adminAuth = useSelector(selectAdmin);
+  const adminMongoId = getAdminMongoUserId(adminAuth);
+  const adminIds = useMemo(
+    () => getBlockedChatParticipantIds([adminMongoId]),
+    [adminMongoId],
+  );
 
   const [browseChats, setBrowseChats] = useState([]);
   const [searchChats, setSearchChats] = useState([]);
@@ -93,7 +53,7 @@ export function AllChats() {
     setSearchModeState(mode);
   };
 
-  const loadAllChats = useCallback(async () => {
+  const loadAllAdminChats = useCallback(async () => {
     let snapshot;
     try {
       snapshot = await getDocs(
@@ -103,26 +63,34 @@ export function AllChats() {
       snapshot = await getDocs(collection(db, "chats"));
     }
 
-    const rows = snapshot.docs.map(chatDocToRow);
-    const enriched = await enrichRows(rows, forSecondaryAdmin, storeUsers);
+    const rows = snapshot.docs
+      .map(chatDocToRow)
+      .filter((row) => isAdminUserChat(row.participants, adminIds));
+
+    const enriched = await enrichChatRows(rows, {
+      matchParticipants: (participants) =>
+        isAdminUserChat(participants, adminIds),
+      chatLink: (row) => getSecondaryAdminUserChatLink(row.chatId),
+      storeUsers,
+    });
 
     return enriched.sort(
       (a, b) => (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0),
     );
-  }, [forSecondaryAdmin, storeUsers]);
+  }, [adminIds, storeUsers]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setIsLoading(true);
       try {
-        const chats = await loadAllChats();
+        const chats = await loadAllAdminChats();
         if (!cancelled) {
           setBrowseChats(chats);
           setChatPage(1);
         }
       } catch (error) {
-        console.error("Error loading chats:", error);
+        console.error("Error loading admin chats:", error);
         if (!cancelled) setBrowseChats([]);
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -132,7 +100,7 @@ export function AllChats() {
     return () => {
       cancelled = true;
     };
-  }, [loadAllChats]);
+  }, [loadAllAdminChats]);
 
   const activeList = searchMode ? searchChats : browseChats;
   const totalCount = activeList.length;
@@ -151,12 +119,17 @@ export function AllChats() {
           `${serverURL}/api/admin/chats/search-by-name`,
           { params: { q, page: 1, limit: 500 } },
         );
-        const chats = filterKnownChats(response.data?.chats || []).map((c) => ({
-          ...c,
-          chatLink: forSecondaryAdmin
-            ? getSecondaryAllChatLink(c.chatId)
-            : c.chatLink,
-        }));
+        const chats = filterKnownChats(response.data?.chats || [])
+          .filter((chat) =>
+            isAdminUserChat(
+              chat.participants || [chat.senderId, chat.receiverId],
+              adminIds,
+            ),
+          )
+          .map((chat) => ({
+            ...chat,
+            chatLink: getSecondaryAdminUserChatLink(chat.chatId),
+          }));
         setSearchChats(chats);
         setChatPage(1);
       } catch (error) {
@@ -167,7 +140,7 @@ export function AllChats() {
         setIsLoading(false);
       }
     },
-    [forSecondaryAdmin],
+    [adminIds],
   );
 
   const runMessageSearch = useCallback(
@@ -178,13 +151,18 @@ export function AllChats() {
           `${serverURL}/api/admin/chats/search-by-message`,
           { params: { q, page: 1, limit: 500 } },
         );
-        const chats = filterKnownChats(response.data?.chats || []).map((c) => ({
-          ...c,
-          lastMessage: c.matchedMessage || c.lastMessage,
-          chatLink: forSecondaryAdmin
-            ? getSecondaryAllChatLink(c.chatId)
-            : c.chatLink,
-        }));
+        const chats = filterKnownChats(response.data?.chats || [])
+          .filter((chat) =>
+            isAdminUserChat(
+              chat.participants || [chat.senderId, chat.receiverId],
+              adminIds,
+            ),
+          )
+          .map((c) => ({
+            ...c,
+            lastMessage: c.matchedMessage || c.lastMessage,
+            chatLink: getSecondaryAdminUserChatLink(c.chatId),
+          }));
         setSearchChats(chats);
         setChatPage(1);
       } catch (error) {
@@ -195,7 +173,7 @@ export function AllChats() {
         setIsLoading(false);
       }
     },
-    [forSecondaryAdmin],
+    [adminIds],
   );
 
   useEffect(() => {
@@ -242,7 +220,8 @@ export function AllChats() {
 
   const showSkeleton = isLoading && browseChats.length === 0;
   const showList = !showSkeleton && viewChats.length > 0;
-  const showEmpty = !showSkeleton && !isSearching && activeList.length === 0;
+  const showEmpty =
+    !showSkeleton && !isSearching && activeList.length === 0;
   const showPagination = totalPages > 1 && !isSearching;
 
   function getInitials(name) {
@@ -271,12 +250,12 @@ export function AllChats() {
     <div className={style.acpPage}>
       <div className={style.udpPageHeader}>
         <nav className={style.udpBreadcrumb} aria-label="breadcrumb">
-          <span>Dashboard</span>
+          <span>Chats</span>
           <span className={style.udpBreadcrumbSep}>/</span>
-          <span className={style.udpBreadcrumbActive}>All Chats</span>
+          <span className={style.udpBreadcrumbActive}>Admin & User</span>
         </nav>
         <div className={style.acpHeaderRow}>
-          <h1 className={style.udpPageTitle}>All Chats</h1>
+          <h1 className={style.udpPageTitle}>Admin Chats</h1>
           {!showSkeleton && (
             <span className={style.acpCountBadge}>
               {totalCount} conversation{totalCount !== 1 ? "s" : ""}
@@ -285,6 +264,9 @@ export function AllChats() {
             </span>
           )}
         </div>
+        <p className="text-muted small mb-0">
+          Conversations between support admin and platform users.
+        </p>
       </div>
 
       <div className={style.acpShell}>
@@ -293,7 +275,7 @@ export function AllChats() {
             <span className={`bi bi-person-search ${style.acpSearchIcon}`} />
             <input
               type="text"
-              placeholder="Search by name…"
+              placeholder="Search by user name…"
               value={searchName}
               onChange={(e) => {
                 setSearchName(e.target.value);
@@ -301,16 +283,6 @@ export function AllChats() {
               }}
               className={style.acpSearchInput}
             />
-            {searchName && (
-              <button
-                type="button"
-                className={style.acpSearchClear}
-                onClick={() => setSearchName("")}
-                aria-label="Clear name search"
-              >
-                <span className="bi bi-x" />
-              </button>
-            )}
           </div>
           <div className={style.acpSearchField}>
             <span className={`bi bi-chat-text ${style.acpSearchIcon}`} />
@@ -324,22 +296,10 @@ export function AllChats() {
               }}
               className={style.acpSearchInput}
             />
-            {searchMessage && (
-              <button
-                type="button"
-                className={style.acpSearchClear}
-                onClick={() => setSearchMessage("")}
-                aria-label="Clear message search"
-              >
-                <span className="bi bi-x" />
-              </button>
-            )}
           </div>
         </div>
 
-        {isSearching && (
-          <p className="text-muted small mb-2">Searching…</p>
-        )}
+        {isSearching && <p className="text-muted small mb-2">Searching…</p>}
 
         {showSkeleton && (
           <div className={style.acpLoadingWrap}>
@@ -430,11 +390,11 @@ export function AllChats() {
         {showEmpty && (
           <div className={style.acpEmpty}>
             <span className={`bi bi-chat-slash ${style.acpEmptyIcon}`} />
-            <p className={style.acpEmptyTitle}>No chats found</p>
+            <p className={style.acpEmptyTitle}>No admin chats found</p>
             <p className={style.acpEmptyHint}>
               {searchMode
                 ? "Try a different search term"
-                : "No conversations in Firestore yet"}
+                : "No admin-to-user conversations yet"}
             </p>
           </div>
         )}
