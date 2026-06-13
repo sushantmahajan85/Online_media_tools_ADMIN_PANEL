@@ -20,7 +20,7 @@ const SOCIAL_LINKS = [
   { key: "Facebook", icon: "bi bi-facebook", color: "#1877f2" },
   { key: "Instagram", icon: "bi bi-instagram", color: "#e1306c" },
   { key: "LinkedIn", icon: "bi bi-linkedin", color: "#0077b5" },
-  { key: "Skype", icon: "bi bi-skype", color: "#00aff0" },
+  { key: "Skype", label: "Teams", icon: "bi bi-microsoft-teams", color: "#6264A7" },
   { key: "Telegram", icon: "bi bi-telegram", color: "#2ca5e0" },
 ];
 
@@ -283,7 +283,7 @@ export function AdminDetailpage() {
               Social Links
             </div>
             <div className={style.adpSocialGrid}>
-              {activeSocials.map(({ key, icon, color }) => (
+              {activeSocials.map(({ key, label, icon, color }) => (
                 <a
                   key={key}
                   href={user[key]}
@@ -292,7 +292,7 @@ export function AdminDetailpage() {
                   className={style.adpSocialItem}
                 >
                   <i className={`${icon} ${style.adpSocialIcon}`} style={{ color }} />
-                  {key}
+                  {label || key}
                 </a>
               ))}
             </div>
