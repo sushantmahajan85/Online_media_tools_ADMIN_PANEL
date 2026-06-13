@@ -46,26 +46,6 @@ export function ReportRequests() {
     }
   }
 
-  async function updateReportStatus(reportId, action) {
-    try {
-      setLoading(true);
-      const res = await axios.post(`${serverURL}/api/users/reportedUser/changeStatus`, {
-        reportId,
-        action,
-      });
-      if (res?.status === 200) {
-        toast.success(res.data.message);
-        setReportedUsers((prev) =>
-          prev.map((r) => (r._id === reportId ? { ...r, status: action } : r))
-        );
-      }
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to update report status");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   function normalizeStatus(status) {
     if (status === "Accepted") return "Approved";
     return status || "Pending";
@@ -131,7 +111,6 @@ export function ReportRequests() {
                   <th className={style.rrTh}>Reason</th>
                   <th className={style.rrTh} style={{ width: 160 }}>Reported At</th>
                   <th className={style.rrTh} style={{ width: 100, textAlign: "center" }}>Status</th>
-                  <th className={style.rrTh} style={{ width: 100, textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -154,7 +133,6 @@ export function ReportRequests() {
                       <td><div className={style.rrSkeleton} style={{ width: 200 }} /></td>
                       <td><div className={style.rrSkeleton} style={{ width: 120 }} /></td>
                       <td><div className={style.rrSkeleton} style={{ width: 60, margin: "0 auto" }} /></td>
-                      <td><div className={style.rrSkeleton} style={{ width: 72, margin: "0 auto" }} /></td>
                     </tr>
                   ))}
 
@@ -231,30 +209,6 @@ export function ReportRequests() {
                         >
                           {reportStatus}
                         </span>
-                      </td>
-
-                      {/* Actions */}
-                      <td className={style.rrTd}>
-                        <div className={style.rrActions}>
-                          <button
-                            className={style.rrBtnApprove}
-                            onClick={() => updateReportStatus(_id, "Approved")}
-                            type="button"
-                            title="Approve report"
-                            disabled={isApproved}
-                          >
-                            <i className="bi bi-check-circle" />
-                          </button>
-                          <button
-                            className={style.rrBtnDeny}
-                            onClick={() => updateReportStatus(_id, "Denied")}
-                            type="button"
-                            title="Deny report"
-                            disabled={isDenied}
-                          >
-                            <i className="bi bi-x-circle" />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                     );

@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Button, CardBody, Input, Table } from "reactstrap";
 import { allusers, selecteUsers } from "../../Store/authSlice";
-import { displayText, formatJoiningDate } from "../../utils/userDisplay";
+import { displayText, formatJoiningDate, resolveProfileImageUrl } from "../../utils/userDisplay";
 import { PRIMARY_SUPPORT_ADMIN_ID } from "../../constants/admin";
 import { DeleteModel } from "./DeleteModel";
 import style from "./ui.module.css";
@@ -150,7 +150,9 @@ const ProjectTables = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((tdata) => (
+              {filteredData.map((tdata) => {
+                const avatarUrl = resolveProfileImageUrl(tdata);
+                return (
                 <tr key={tdata._id} className={style.usersRow}>
                   {/* Name */}
                   <td>
@@ -158,9 +160,9 @@ const ProjectTables = () => {
                       to={`/Admin/AdminDashboard/UserDetails/${tdata._id}`}
                       className={style.usersNameCell}
                     >
-                      {tdata.profileImageUrl ? (
+                      {avatarUrl ? (
                         <img
-                          src={tdata.profileImageUrl}
+                          src={avatarUrl}
                           className={style.usersAvatar}
                           alt=""
                           width={36}
@@ -301,7 +303,8 @@ const ProjectTables = () => {
                     {!tdata.firstName && <span className={style.usersCellMuted}>—</span>}
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </Table>
         </div>

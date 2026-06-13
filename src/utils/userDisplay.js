@@ -46,3 +46,30 @@ export function displayText(value, fallback = "—") {
   if (value == null || value === "") return fallback;
   return String(value);
 }
+
+/** Matches server resolveProfileImageUrl; returns null when no image (show initials). */
+export function resolveProfileImageUrl(user) {
+  if (!user || typeof user !== "object") return null;
+
+  const key =
+    user.awsbucketObjectkey != null ? String(user.awsbucketObjectkey).trim() : "";
+  const prof =
+    user.profileImageUrl != null ? String(user.profileImageUrl).trim() : "";
+  if (key && prof) return prof;
+
+  const googlePic =
+    user.googleProfileImageUrl != null
+      ? String(user.googleProfileImageUrl).trim()
+      : "";
+  if (googlePic) return googlePic;
+
+  const linkedinPic =
+    user.linkedinProfileImageUrl != null
+      ? String(user.linkedinProfileImageUrl).trim()
+      : "";
+  if (linkedinPic) return linkedinPic;
+
+  if (prof) return prof;
+
+  return null;
+}
