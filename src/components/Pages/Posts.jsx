@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import style from "./ui.module.css";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -25,6 +26,207 @@ function StatusBadge({ post }) {
   return <span className={style.pstBadgeDisapproved}>Disapproved</span>;
 }
 
+function PostActionsMenu({
+  post,
+  isOpen,
+  onToggle,
+  onClose,
+  pinLimitReached,
+  onApprove,
+  onDisapprove,
+  onPin,
+  onEdit,
+  onLinkedIn,
+  onDelete,
+}) {
+  const menuRef = useRef(null);
+  const triggerRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState(null);
+  const isApproved = post.isApproved && !post.underApproval;
+  const isDisapproved = !post.isApproved && !post.underApproval;
+  const pinDisabled = post.isPinned || pinLimitReached;
+  const pinLabel = post.isPinned
+    ? "Already pinned"
+    : pinLimitReached
+      ? "Pin limit reached"
+      : "Pin post";
+
+  const updateMenuPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const menuWidth = 196;
+    const menuHeight = menuRef.current?.offsetHeight || 248;
+    const gap = 6;
+    const padding = 8;
+
+    let top = rect.bottom + gap;
+    let left = rect.right - menuWidth;
+
+    if (top + menuHeight > window.innerHeight - padding) {
+      top = Math.max(padding, rect.top - menuHeight - gap);
+    }
+    if (left < padding) left = padding;
+    if (left + menuWidth > window.innerWidth - padding) {
+      left = window.innerWidth - menuWidth - padding;
+    }
+
+    setMenuStyle({ top, left, width: menuWidth });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      setMenuStyle(null);
+      return undefined;
+    }
+
+    updateMenuPosition();
+    const raf = window.requestAnimationFrame(() => {
+      if (menuRef.current) updateMenuPosition();
+    });
+
+    return () => window.cancelAnimationFrame(raf);
+  }, [isOpen, updateMenuPosition]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    window.addEventListener("scroll", updateMenuPosition, true);
+    window.addEventListener("resize", updateMenuPosition);
+
+    return () => {
+      window.removeEventListener("scroll", updateMenuPosition, true);
+      window.removeEventListener("resize", updateMenuPosition);
+    };
+  }, [isOpen, updateMenuPosition]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleOutside = (e) => {
+      const target = e.target;
+      if (
+        menuRef.current?.contains(target) ||
+        triggerRef.current?.contains(target)
+      ) {
+        return;
+      }
+      onClose();
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [isOpen, onClose]);
+
+  const run = (action) => {
+    action();
+    onClose();
+  };
+
+  const items = [
+    {
+      key: "approve",
+      label: "Approve",
+      icon: "bi-check-circle",
+      tone: "approve",
+      disabled: isApproved,
+      onClick: () => run(() => onApprove(post, true)),
+    },
+    {
+      key: "disapprove",
+      label: "Disapprove",
+      icon: "bi-x-circle",
+      tone: "disapprove",
+      disabled: isDisapproved,
+      onClick: () => run(() => onDisapprove(post, false)),
+    },
+    {
+      key: "pin",
+      label: pinLabel,
+      icon: post.isPinned ? "bi-pin-fill" : "bi-pin",
+      tone: "pin",
+      disabled: pinDisabled,
+      onClick: () => run(() => onPin(post)),
+    },
+    {
+      key: "edit",
+      label: "Edit post",
+      icon: "bi-pencil",
+      tone: "default",
+      onClick: () => run(() => onEdit(post)),
+    },
+    {
+      key: "linkedin",
+      label: post.addedToAdminLinkedin ? "Shared on LinkedIn" : "Share on LinkedIn",
+      icon: "bi-linkedin",
+      tone: "linkedin",
+      disabled: post.addedToAdminLinkedin,
+      onClick: () => run(() => onLinkedIn(post)),
+    },
+    {
+      key: "delete",
+      label: "Delete post",
+      icon: "bi-trash3",
+      tone: "delete",
+      onClick: () => run(() => onDelete(post._id)),
+    },
+  ];
+
+  const toneClass = {
+    approve: style.pstMenuItemApprove,
+    disapprove: style.pstMenuItemDisapprove,
+    pin: style.pstMenuItemPin,
+    default: "",
+    linkedin: style.pstMenuItemLinkedin,
+    delete: style.pstMenuItemDelete,
+  };
+
+  const menuPortal =
+    isOpen &&
+    menuStyle &&
+    typeof document !== "undefined" &&
+    createPortal(
+      <div
+        ref={menuRef}
+        className={style.pstMenuDropdown}
+        role="menu"
+        style={{
+          top: menuStyle.top,
+          left: menuStyle.left,
+          width: menuStyle.width,
+        }}
+      >
+        {items.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            role="menuitem"
+            className={`${style.pstMenuItem} ${toneClass[item.tone] || ""}`}
+            disabled={item.disabled}
+            onClick={item.onClick}
+          >
+            <i className={`bi ${item.icon} ${style.pstMenuItemIcon}`} />
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </div>,
+      document.body
+    );
+
+  return (
+    <div className={style.pstActionsMenu}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`${style.pstMenuTrigger} ${isOpen ? style.pstMenuTriggerActive : ""}`}
+        onClick={onToggle}
+        aria-label="Post actions"
+        aria-expanded={isOpen}
+      >
+        <i className="bi bi-three-dots-vertical" />
+      </button>
+      {menuPortal}
+    </div>
+  );
+}
+
 export function Posts() {
   const dispatch = useDispatch();
   const StorePosts = useSelector(selectAllPosts);
@@ -41,6 +243,7 @@ export function Posts() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewPost, setViewPost] = useState(null);
   const [modalView, setModalView] = useState(false);
+  const [openActionsId, setOpenActionsId] = useState(null);
 
   function openPostView(post) {
     setViewPost(post);
@@ -165,7 +368,13 @@ export function Posts() {
     const d = new Date(raw);
     return isNaN(d)
       ? raw.slice(0, 15)
-      : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      : d.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        });
   }
 
   const approvedCount = (StorePosts || []).filter((p) => p.isApproved && !p.underApproval).length;
@@ -240,21 +449,19 @@ export function Posts() {
             <table className={style.pstTable}>
               <thead>
                 <tr>
-                  <th className={style.pstTh} style={{ width: 36 }}>#</th>
-                  <th className={style.pstTh} style={{ width: 72 }}>Media</th>
-                  <th className={style.pstTh}>Content</th>
-                  <th className={style.pstTh} style={{ width: 150 }}>Posted By</th>
-                  <th className={style.pstTh} style={{ width: 120 }}>Date</th>
-                  <th className={style.pstTh} style={{ width: 110 }}>Status</th>
-                  <th className={style.pstTh} style={{ width: 220, textAlign: "center" }}>Actions</th>
+                  <th className={`${style.pstTh} ${style.pstColIndex}`}>#</th>
+                  <th className={`${style.pstTh} ${style.pstColMedia}`}>Media</th>
+                  <th className={`${style.pstTh} ${style.pstColContent}`}>Content</th>
+                  <th className={`${style.pstTh} ${style.pstColAuthor}`}>Posted By</th>
+                  <th className={`${style.pstTh} ${style.pstColDate}`}>Date</th>
+                  <th className={`${style.pstTh} ${style.pstColStatus}`}>Status</th>
+                  <th className={`${style.pstTh} ${style.pstColActions}`}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((post, index) => {
                   const showSeeMore =
                     (post.postContent && post.postContent.length > 80) || !!post.postMediaUrl;
-                  const isApproved = post.isApproved && !post.underApproval;
-                  const isDisapproved = !post.isApproved && !post.underApproval;
                   return (
                     <tr key={post._id} className={style.pstRow}>
                       {/* # */}
@@ -281,7 +488,7 @@ export function Posts() {
                       </td>
 
                       {/* Content */}
-                      <td className={style.pstTd}>
+                      <td className={`${style.pstTd} ${style.pstColContent}`}>
                         <div className={style.pstContentCell}>
                           <p className={style.pstContentClamp}>
                             {post.postContent || <span style={{ color: "#9ca3af" }}>No content</span>}
@@ -299,7 +506,7 @@ export function Posts() {
                       </td>
 
                       {/* Author */}
-                      <td className={style.pstTd}>
+                      <td className={`${style.pstTd} ${style.pstColAuthor}`}>
                         <div className={style.pstAuthorCell}>
                           <div className={style.pstAuthorAvatar}>
                             {(post.userName || "?")[0].toUpperCase()}
@@ -309,90 +516,37 @@ export function Posts() {
                       </td>
 
                       {/* Date */}
-                      <td className={style.pstTd}>
+                      <td className={`${style.pstTd} ${style.pstColDate}`}>
                         <span className={style.pstDate}>{formatDate(post.PostCreated)}</span>
                       </td>
 
                       {/* Status */}
-                      <td className={style.pstTd}>
+                      <td className={`${style.pstTd} ${style.pstColStatus}`}>
                         <StatusBadge post={post} />
                       </td>
 
                       {/* Actions */}
-                      <td className={style.pstTd}>
-                        <div className={style.pstActions}>
-                          <button
-                            className={style.pstBtnApprove}
-                            onClick={() => updateApproveStatus(post, true)}
-                            type="button"
-                            title="Approve"
-                            disabled={isApproved}
-                          >
-                            <i className="bi bi-check-circle" />
-                          </button>
-
-                          <button
-                            className={style.pstBtnDisapprove}
-                            onClick={() => updateApproveStatus(post, false)}
-                            type="button"
-                            title="Disapprove"
-                            disabled={isDisapproved}
-                          >
-                            <i className="bi bi-x-circle" />
-                          </button>
-
-                          {/* Pin */}
-                          <button
-                            className={
-                              post.isPinned
-                                ? style.pstBtnPinned
-                                : pinLimitReached
-                                  ? style.pstBtnPinLimit
-                                  : style.pstBtnPin
-                            }
-                            onClick={() => handlePinClick(post)}
-                            type="button"
-                            title={
-                              post.isPinned
-                                ? "Already pinned"
-                                : pinLimitReached
-                                  ? `Pin limit reached (${MAX_PINNED_POSTS} max)`
-                                  : "Pin post"
-                            }
-                          >
-                            <i className={`bi ${post.isPinned ? "bi-pin-fill" : "bi-pin"}`} />
-                          </button>
-
-                          {/* Edit */}
-                          <button
-                            className={style.pstBtnIcon}
-                            onClick={() => { setmodalEdit(true); setpostData(post); }}
-                            type="button"
-                            title="Edit post"
-                          >
-                            <i className="bi bi-pencil" />
-                          </button>
-
-                          {/* LinkedIn */}
-                          <button
-                            className={post.addedToAdminLinkedin ? style.pstBtnLinkedInDone : style.pstBtnLinkedIn}
-                            onClick={() => handleLinkedInClick(post)}
-                            type="button"
-                            title={post.addedToAdminLinkedin ? "Already shared on LinkedIn" : "Share on LinkedIn"}
-                          >
-                            <i className="bi bi-linkedin" />
-                          </button>
-
-                          {/* Delete */}
-                          <button
-                            className={style.pstBtnDelete}
-                            onClick={() => confirmDelete(post._id)}
-                            type="button"
-                            title="Delete post"
-                          >
-                            <i className="bi bi-trash3" />
-                          </button>
-                        </div>
+                      <td className={`${style.pstTd} ${style.pstTdActions} ${style.pstColActions}`}>
+                        <PostActionsMenu
+                          post={post}
+                          isOpen={openActionsId === post._id}
+                          onToggle={() =>
+                            setOpenActionsId((current) =>
+                              current === post._id ? null : post._id
+                            )
+                          }
+                          onClose={() => setOpenActionsId(null)}
+                          pinLimitReached={pinLimitReached}
+                          onApprove={updateApproveStatus}
+                          onDisapprove={updateApproveStatus}
+                          onPin={handlePinClick}
+                          onEdit={(selected) => {
+                            setmodalEdit(true);
+                            setpostData(selected);
+                          }}
+                          onLinkedIn={handleLinkedInClick}
+                          onDelete={confirmDelete}
+                        />
                       </td>
                     </tr>
                   );

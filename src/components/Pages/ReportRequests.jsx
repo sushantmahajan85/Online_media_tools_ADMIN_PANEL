@@ -46,11 +46,6 @@ export function ReportRequests() {
     }
   }
 
-  function normalizeStatus(status) {
-    if (status === "Accepted") return "Approved";
-    return status || "Pending";
-  }
-
   const filtered = reportedUsers
     .filter((r) => {
       const q = search.toLowerCase();
@@ -110,7 +105,6 @@ export function ReportRequests() {
                   <th className={style.rrTh}>Reporting User</th>
                   <th className={style.rrTh}>Reason</th>
                   <th className={style.rrTh} style={{ width: 160 }}>Reported At</th>
-                  <th className={style.rrTh} style={{ width: 100, textAlign: "center" }}>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,17 +126,11 @@ export function ReportRequests() {
                       </td>
                       <td><div className={style.rrSkeleton} style={{ width: 200 }} /></td>
                       <td><div className={style.rrSkeleton} style={{ width: 120 }} /></td>
-                      <td><div className={style.rrSkeleton} style={{ width: 60, margin: "0 auto" }} /></td>
                     </tr>
                   ))}
 
                 {!loading &&
-                  filtered.map(({ _id, reason, reportedUserId, reporterUserId, status, createdAt }, index) => {
-                    const reportStatus = normalizeStatus(status);
-                    const isApproved = reportStatus === "Approved";
-                    const isDenied = reportStatus === "Denied";
-
-                    return (
+                  filtered.map(({ _id, reason, reportedUserId, reporterUserId, createdAt }, index) => (
                     <tr key={_id} className={style.rrRow}>
                       <td className={style.rrTd} style={{ color: "#9ca3af", fontSize: 13 }}>
                         {index + 1}
@@ -195,24 +183,8 @@ export function ReportRequests() {
                       <td className={style.rrTd}>
                         <span className={style.rrDateTime}>{formatReportDateTime(createdAt)}</span>
                       </td>
-
-                      {/* Status */}
-                      <td className={style.rrTd} style={{ textAlign: "center" }}>
-                        <span
-                          className={
-                            isApproved
-                              ? style.rrStatusAccepted
-                              : isDenied
-                              ? style.rrStatusDenied
-                              : style.rrStatusPending
-                          }
-                        >
-                          {reportStatus}
-                        </span>
-                      </td>
                     </tr>
-                    );
-                  })}
+                  ))}
               </tbody>
             </table>
           )}
