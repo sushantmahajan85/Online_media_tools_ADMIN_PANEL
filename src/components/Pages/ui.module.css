@@ -3486,12 +3486,14 @@
 /* Table */
 .pstTableWrap {
   flex: 1;
+  overflow-x: auto;
   overflow-y: auto;
   background: #fff;
   max-height: calc(100vh - 280px);
+  -webkit-overflow-scrolling: touch;
 }
 
-.pstTableWrap::-webkit-scrollbar { width: 5px; }
+.pstTableWrap::-webkit-scrollbar { width: 5px; height: 5px; }
 .pstTableWrap::-webkit-scrollbar-thumb {
   background: #e5e7eb;
   border-radius: 3px;
@@ -3499,7 +3501,20 @@
 
 .pstTable {
   width: 100%;
+  min-width: 860px;
+  table-layout: fixed;
   border-collapse: collapse;
+}
+
+.pstColIndex { width: 40px; }
+.pstColMedia { width: 72px; }
+.pstColContent { width: 220px; max-width: 220px; }
+.pstColAuthor { width: 128px; }
+.pstColDate { width: 132px; }
+.pstColStatus { width: 104px; }
+.pstColActions {
+  width: 72px;
+  text-align: center;
 }
 
 .pstTh {
@@ -3529,6 +3544,13 @@
 .pstTd {
   padding: 11px 14px;
   vertical-align: middle;
+  overflow: hidden;
+}
+
+.pstColContent,
+.pstColAuthor,
+.pstColDate {
+  overflow: hidden;
 }
 
 /* Media thumb */
@@ -3559,7 +3581,8 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  max-width: 380px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .pstContentClamp {
@@ -3599,6 +3622,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .pstAuthorAvatar {
@@ -3620,13 +3644,17 @@
   font-weight: 600;
   color: #111827;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 /* Date */
 .pstDate {
   font-size: 12.5px;
   color: #6b7280;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.35;
 }
 
 /* Status badges */
@@ -3675,6 +3703,94 @@
   align-items: center;
   gap: 4px;
   flex-wrap: nowrap;
+}
+
+.pstActionsMenu {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.pstTdActions {
+  overflow: visible;
+  position: relative;
+}
+
+.pstMenuTrigger {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pstMenuTrigger:hover,
+.pstMenuTriggerActive {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.pstMenuDropdown {
+  position: fixed;
+  z-index: 120000;
+  min-width: 196px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.pstMenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.pstMenuItem:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.pstMenuItem:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pstMenuItemIcon {
+  width: 16px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.pstMenuItemApprove .pstMenuItemIcon { color: #16a34a; }
+.pstMenuItemDisapprove .pstMenuItemIcon { color: #e11d48; }
+.pstMenuItemPin .pstMenuItemIcon { color: #ca8a04; }
+.pstMenuItemLinkedin .pstMenuItemIcon { color: #0a66c2; }
+.pstMenuItemDelete { color: #be123c; }
+.pstMenuItemDelete .pstMenuItemIcon { color: #e11d48; }
+.pstMenuItemDelete:hover:not(:disabled) {
+  background: #fff1f2;
+  color: #be123c;
 }
 
 /* Base icon button */
@@ -3849,14 +3965,27 @@
 
 .pstEmptyClear:hover { background: #f3f4f6; }
 
+@media (max-width: 1100px) {
+  .pstColContent { width: 180px; max-width: 180px; }
+  .pstColAuthor { width: 112px; }
+  .pstColDate { width: 120px; }
+}
+
 @media (max-width: 900px) {
-  .pstTh:nth-child(5),
-  .pstTd:nth-child(5) { display: none; }
+  .pstColDate,
+  .pstTh.pstColDate,
+  .pstTd.pstColDate { display: none; }
+
+  .pstTable { min-width: 720px; }
 }
 
 @media (max-width: 700px) {
-  .pstTh:nth-child(4),
-  .pstTd:nth-child(4) { display: none; }
+  .pstColAuthor,
+  .pstTh.pstColAuthor,
+  .pstTd.pstColAuthor { display: none; }
+
+  .pstTable { min-width: 560px; }
+  .pstColContent { width: 160px; max-width: 160px; }
 
   .pstToolbar { flex-direction: column; align-items: flex-start; }
   .pstSearchWrap { max-width: 100%; width: 100%; }
@@ -5718,6 +5847,231 @@
 }
 
 .epTagBtnActive:hover { background: #1d4ed8; color: #fff; }
+
+.epSelect {
+  padding: 9px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #111827;
+  background: #f9fafb;
+  outline: none;
+  width: 100%;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.epSelect:focus {
+  border-color: #2563eb;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.epActionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.epTagsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.epTagsBtn:hover {
+  background: #f9fafb;
+}
+
+.epTagsBtnActive {
+  border-color: #0a7ea4;
+  background: #e0f2f7;
+  color: #0a7ea4;
+}
+
+.epTagsBtnRequired {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.epRequiredMark {
+  color: #dc2626;
+}
+
+.epTagsWarning {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.epSelectedTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.epTagChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e0f2f7;
+  color: #0a7ea4;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.epTagChipRemovable {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 4px 10px;
+  border-radius: 999px;
+  background: #e0f2f7;
+  color: #0a7ea4;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.epTagChipRemovable button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  display: inline-flex;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.epTagChipRemovable button:hover {
+  opacity: 1;
+}
+
+.epTagsModal {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 480px;
+}
+
+.epTagsModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.epTagsModalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.epTagsModalSub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.epTagsModalBody {
+  padding: 16px 20px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.epTagsSectionLabel {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.epTagsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.epSuggestedTag {
+  padding: 6px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.epSuggestedTag:hover {
+  border-color: #0a7ea4;
+  color: #0a7ea4;
+}
+
+.epSuggestedTagActive {
+  background: #0a7ea4;
+  border-color: #0a7ea4;
+  color: #fff;
+}
+
+.epCustomTagRow {
+  display: flex;
+  gap: 8px;
+}
+
+.epAddTagBtn {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.epAddTagBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.epTagsSelectedSection {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.epTagsModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 20px;
+  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+}
 
 /* Footer */
 .epFooter {
