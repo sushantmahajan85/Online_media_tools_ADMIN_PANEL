@@ -26,6 +26,23 @@ function StatusBadge({ post }) {
   return <span className={style.pstBadgeDisapproved}>Disapproved</span>;
 }
 
+function PostLinkedInButton({ post, onLinkedIn }) {
+  const shared = !!post.addedToAdminLinkedin;
+
+  return (
+    <button
+      type="button"
+      className={`${style.pstLinkedInBtn} ${shared ? style.pstLinkedInBtnShared : ""}`}
+      onClick={() => onLinkedIn(post)}
+      disabled={shared}
+      title={shared ? "Shared on LinkedIn" : "Share on LinkedIn"}
+      aria-label={shared ? "Shared on LinkedIn" : "Share on LinkedIn"}
+    >
+      <i className="bi bi-linkedin" />
+    </button>
+  );
+}
+
 function PostActionsMenu({
   post,
   isOpen,
@@ -36,7 +53,6 @@ function PostActionsMenu({
   onDisapprove,
   onPin,
   onEdit,
-  onLinkedIn,
   onDelete,
 }) {
   const menuRef = useRef(null);
@@ -153,14 +169,6 @@ function PostActionsMenu({
       onClick: () => run(() => onEdit(post)),
     },
     {
-      key: "linkedin",
-      label: post.addedToAdminLinkedin ? "Shared on LinkedIn" : "Share on LinkedIn",
-      icon: "bi-linkedin",
-      tone: "linkedin",
-      disabled: post.addedToAdminLinkedin,
-      onClick: () => run(() => onLinkedIn(post)),
-    },
-    {
       key: "delete",
       label: "Delete post",
       icon: "bi-trash3",
@@ -174,7 +182,6 @@ function PostActionsMenu({
     disapprove: style.pstMenuItemDisapprove,
     pin: style.pstMenuItemPin,
     default: "",
-    linkedin: style.pstMenuItemLinkedin,
     delete: style.pstMenuItemDelete,
   };
 
@@ -527,26 +534,28 @@ export function Posts() {
 
                       {/* Actions */}
                       <td className={`${style.pstTd} ${style.pstTdActions} ${style.pstColActions}`}>
-                        <PostActionsMenu
-                          post={post}
-                          isOpen={openActionsId === post._id}
-                          onToggle={() =>
-                            setOpenActionsId((current) =>
-                              current === post._id ? null : post._id
-                            )
-                          }
-                          onClose={() => setOpenActionsId(null)}
-                          pinLimitReached={pinLimitReached}
-                          onApprove={updateApproveStatus}
-                          onDisapprove={updateApproveStatus}
-                          onPin={handlePinClick}
-                          onEdit={(selected) => {
-                            setmodalEdit(true);
-                            setpostData(selected);
-                          }}
-                          onLinkedIn={handleLinkedInClick}
-                          onDelete={confirmDelete}
-                        />
+                        <div className={style.pstActions}>
+                          <PostLinkedInButton post={post} onLinkedIn={handleLinkedInClick} />
+                          <PostActionsMenu
+                            post={post}
+                            isOpen={openActionsId === post._id}
+                            onToggle={() =>
+                              setOpenActionsId((current) =>
+                                current === post._id ? null : post._id
+                              )
+                            }
+                            onClose={() => setOpenActionsId(null)}
+                            pinLimitReached={pinLimitReached}
+                            onApprove={updateApproveStatus}
+                            onDisapprove={updateApproveStatus}
+                            onPin={handlePinClick}
+                            onEdit={(selected) => {
+                              setmodalEdit(true);
+                              setpostData(selected);
+                            }}
+                            onDelete={confirmDelete}
+                          />
+                        </div>
                       </td>
                     </tr>
                   );

@@ -3501,19 +3501,19 @@
 
 .pstTable {
   width: 100%;
-  min-width: 860px;
+  min-width: 760px;
   table-layout: fixed;
   border-collapse: collapse;
 }
 
 .pstColIndex { width: 40px; }
-.pstColMedia { width: 72px; }
-.pstColContent { width: 220px; max-width: 220px; }
-.pstColAuthor { width: 128px; }
-.pstColDate { width: 132px; }
-.pstColStatus { width: 104px; }
+.pstColMedia { width: 68px; }
+.pstColContent { width: 150px; max-width: 150px; }
+.pstColAuthor { width: 118px; }
+.pstColDate { width: 148px; min-width: 148px; }
+.pstColStatus { width: 100px; }
 .pstColActions {
-  width: 72px;
+  width: 104px;
   text-align: center;
 }
 
@@ -3542,9 +3542,21 @@
 .pstRow:hover { background: #f8faff; }
 
 .pstTd {
-  padding: 11px 14px;
+  padding: 10px 12px;
   vertical-align: middle;
   overflow: hidden;
+}
+
+.pstTh.pstColContent,
+.pstTd.pstColContent {
+  padding-left: 10px;
+  padding-right: 8px;
+}
+
+.pstTh.pstColDate,
+.pstTd.pstColDate {
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .pstColContent,
@@ -3579,21 +3591,25 @@
 /* Content */
 .pstContentCell {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
   max-width: 100%;
   min-width: 0;
 }
 
 .pstContentClamp {
-  font-size: 13.5px;
+  font-size: 13px;
   color: #374151;
-  line-height: 1.5;
+  line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin: 0;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .pstContentFull {
@@ -3606,12 +3622,13 @@
 .pstExpandBtn {
   background: none;
   border: none;
-  font-size: 12px;
+  font-size: 11.5px;
   color: #2563eb;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
-  text-align: left;
+  flex-shrink: 0;
+  white-space: nowrap;
   transition: color 0.15s;
 }
 
@@ -3651,10 +3668,11 @@
 
 /* Date */
 .pstDate {
-  font-size: 12.5px;
+  font-size: 12px;
   color: #6b7280;
-  white-space: normal;
+  white-space: nowrap;
   line-height: 1.35;
+  display: inline-block;
 }
 
 /* Status badges */
@@ -3736,6 +3754,35 @@
   background: #f3f4f6;
   color: #111827;
   border-color: #d1d5db;
+}
+
+.pstLinkedInBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #0a66c2;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.pstLinkedInBtn:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #004182;
+}
+
+.pstLinkedInBtnShared {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
 }
 
 .pstMenuDropdown {
@@ -3966,9 +4013,9 @@
 .pstEmptyClear:hover { background: #f3f4f6; }
 
 @media (max-width: 1100px) {
-  .pstColContent { width: 180px; max-width: 180px; }
-  .pstColAuthor { width: 112px; }
-  .pstColDate { width: 120px; }
+  .pstColContent { width: 130px; max-width: 130px; }
+  .pstColAuthor { width: 104px; }
+  .pstColDate { width: 140px; min-width: 140px; }
 }
 
 @media (max-width: 900px) {
@@ -3984,8 +4031,8 @@
   .pstTh.pstColAuthor,
   .pstTd.pstColAuthor { display: none; }
 
-  .pstTable { min-width: 560px; }
-  .pstColContent { width: 160px; max-width: 160px; }
+  .pstTable { min-width: 640px; }
+  .pstColContent { width: 120px; max-width: 120px; }
 
   .pstToolbar { flex-direction: column; align-items: flex-start; }
   .pstSearchWrap { max-width: 100%; width: 100%; }
