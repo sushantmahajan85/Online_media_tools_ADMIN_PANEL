@@ -131,8 +131,9 @@ export function UserDetailpage() {
           );
         }
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
+          console.error("Failed to load login history:", err);
           setLoginHistory([]);
           setHistoryPagination({ total: 0, totalPages: 0, limit: HISTORY_PAGE_SIZE });
         }
@@ -171,6 +172,28 @@ export function UserDetailpage() {
   const historyTotalPages = Math.max(1, historyPagination.totalPages || 0);
   const showHistoryPagination = historyPagination.total > HISTORY_PAGE_SIZE;
   const historyRowOffset = (historyPage - 1) * HISTORY_PAGE_SIZE;
+
+  const displayLoginHistory = useMemo(() => {
+    if (loginHistory.length > 0) return loginHistory;
+
+    const fallback = [];
+    if (user?.lastLoginIp) {
+      fallback.push({
+        _id: "profile-last-login",
+        ip: user.lastLoginIp,
+        loggedInAt: user.lastLoginAt,
+        method: "last_login",
+      });
+    }
+    if (user?.ipAddress && user.ipAddress !== user.lastLoginIp) {
+      fallback.push({
+        _id: "profile-registration",
+        ip: user.ipAddress,
+        method: "registration",
+      });
+    }
+    return fallback;
+  }, [loginHistory, user]);
 
   return (
     <div className={style.udpPage}>
@@ -318,7 +341,7 @@ export function UserDetailpage() {
             <Col xs={12}>
               <InfoCard title="Login History" icon="bi-clock-history">
                 <div className={style.rrTableWrap}>
-                  {!historyLoading && loginHistory.length === 0 ? (
+                  {!historyLoading && displayLoginHistory.length === 0 ? (
                     <div className={style.rrEmpty}>
                       <i className="bi bi-clock-history" style={{ fontSize: 44, opacity: 0.2 }} />
                       <p className={style.rrEmptyTitle}>No login history recorded yet.</p>
@@ -348,7 +371,7 @@ export function UserDetailpage() {
                           ))}
 
                         {!historyLoading &&
-                          loginHistory.map((entry, index) => (
+                          displayLoginHistory.map((entry, index) => (
                             <tr key={entry._id} className={style.rrRow}>
                               <td className={style.rrTd} style={{ color: "#9ca3af", fontSize: 13 }}>
                                 {historyRowOffset + index + 1}

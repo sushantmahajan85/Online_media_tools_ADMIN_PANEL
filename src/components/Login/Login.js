@@ -45,6 +45,8 @@ export function Login() {
   const [otp, setOtp] = useState("");
   const [otpToken, setOtpToken] = useState("");
   const [maskedEmail, setMaskedEmail] = useState("");
+  const [otpInboxes, setOtpInboxes] = useState([]);
+  const [devCode, setDevCode] = useState("");
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -65,11 +67,13 @@ export function Login() {
         if (response.data.requiresOtp) {
           setOtpToken(response.data.otpToken);
           setMaskedEmail(maskEmailForDisplay(loginData.email));
+          setOtpInboxes(response.data.otpInboxes || []);
+          setDevCode(response.data._devCode || "");
           setOtp("");
           setStep("otp");
           toast.success(response.data.message || "Verification code sent");
           if (response.data._devCode) {
-            console.info("[dev] Admin login OTP:", response.data._devCode);
+            toast.info(`Dev code: ${response.data._devCode}`, { autoClose: 120000 });
           }
         } else if (response.data.admin) {
           toast.success("Successfully signed in");
@@ -130,7 +134,8 @@ export function Login() {
       });
       toast.success(response.data.message || "Code resent");
       if (response.data._devCode) {
-        console.info("[dev] Admin login OTP:", response.data._devCode);
+        setDevCode(response.data._devCode);
+        toast.info(`Dev code: ${response.data._devCode}`, { autoClose: 120000 });
       }
     } catch (error) {
       const status = error?.response?.status;
@@ -152,6 +157,8 @@ export function Login() {
     setOtp("");
     setOtpToken("");
     setMaskedEmail("");
+    setOtpInboxes([]);
+    setDevCode("");
   }
 
   return (
@@ -233,9 +240,39 @@ export function Login() {
             <>
               <h2 className={style.heading}>Verify your email</h2>
               <p className={style.sub}>
-                Enter the 6-digit code sent to{" "}
-                <strong>{maskedEmail}</strong>
+                Enter the 6-digit code sent to the authorized admin inboxes
+                {otpInboxes.length > 0 ? (
+                  <>
+                    {" "}
+                    ({otpInboxes.join(", ")})
+                  </>
+                ) : (
+                  <>
+                    {" "}
+                    (check <strong>{maskedEmail}</strong>)
+                  </>
+                )}
+                . Also check spam.
               </p>
+
+              {devCode ? (
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: "1px solid #fcd34d",
+                    background: "#fffbeb",
+                    color: "#92400e",
+                    fontSize: 13,
+                  }}
+                >
+                  <strong>Local dev code:</strong>{" "}
+                  <span style={{ fontFamily: "monospace", letterSpacing: 4 }}>
+                    {devCode}
+                  </span>
+                </div>
+              ) : null}
 
               <form onSubmit={verifyOtp} className={style.form} noValidate>
                 <div className={style.fieldGroup}>
