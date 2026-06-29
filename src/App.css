@@ -102,13 +102,13 @@
 
 .storeName{
     color: rgb(255, 255, 255);
-    font-family: 'Playfair Display SC', serif ;
+    font-family: Georgia, Cambria, "Times New Roman", Times, serif;
     letter-spacing: 0.2rem; 
 }
 
 .adminName{
   color: rgb(255, 255, 255);
-  font-family: 'Playfair Display SC', serif ;
+  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
   letter-spacing: 0.2rem;
 }
 
