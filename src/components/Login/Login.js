@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -8,11 +8,21 @@ import { useDispatch } from "react-redux";
 import { login } from "../../Store/authSlice";
 import { getAdminHomePath } from "../../utils/adminProfile";
 import CryptoJS from "crypto-js";
+import {
+  executeRecaptchaV3,
+  getRecaptchaSiteKey,
+  isRecaptchaEnabled,
+  loadRecaptchaScript,
+} from "../../utils/recaptcha";
+import {
+  hasAcceptedAdminTerms,
+  markAdminTermsAccepted,
+} from "../../utils/termsAcceptance";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 const secretEnKey = process.env.REACT_APP_SECRET_ENC_KEY;
-const ADMIN_OTP_DISPLAY_EMAIL =
-  process.env.REACT_APP_ADMIN_OTP_DISPLAY_EMAIL || "akidelhi@gmail.com";
+const publicSiteUrl =
+  process.env.REACT_APP_PUBLIC_SITE_URL || "https://affiliatechatbox.com";
 
 function maskEmailForDisplay(email) {
   if (!email || !email.includes("@")) return "your email";
@@ -49,6 +59,60 @@ export function Login() {
   const [maskedEmail, setMaskedEmail] = useState("");
   const [otpInboxes, setOtpInboxes] = useState([]);
   const [devCode, setDevCode] = useState("");
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [gateChecking, setGateChecking] = useState(isRecaptchaEnabled());
+  const [gateError, setGateError] = useState("");
+  const [gateToken, setGateToken] = useState("");
+
+  useEffect(() => {
+    setTermsAgreed(hasAcceptedAdminTerms());
+  }, []);
+
+  useEffect(() => {
+    if (!isRecaptchaEnabled()) {
+      setGateChecking(false);
+      return;
+    }
+
+    let active = true;
+
+    async function runGate() {
+      try {
+        setGateChecking(true);
+        setGateError("");
+        await loadRecaptchaScript();
+        if (!window.grecaptcha?.ready) {
+          throw new Error("reCAPTCHA is not ready");
+        }
+
+        window.grecaptcha.ready(async () => {
+          try {
+            const token = await executeRecaptchaV3("admin_page_gate");
+            if (!active) return;
+            setGateToken(token || "");
+            setGateChecking(false);
+          } catch {
+            if (!active) return;
+            setGateError("Security verification failed. Please refresh.");
+            setGateChecking(false);
+          }
+        });
+      } catch {
+        if (!active) return;
+        setGateError("Security verification failed. Please refresh.");
+        setGateChecking(false);
+      }
+    }
+
+    runGate();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const canSubmitCredentials =
+    termsAgreed && (!isRecaptchaEnabled() || Boolean(gateToken));
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -62,9 +126,32 @@ export function Login() {
 
   async function loginUser(e) {
     e.preventDefault();
+    if (!termsAgreed) {
+      toast.error("Please accept the Terms of Service and Privacy Policy");
+      return;
+    }
+    if (isRecaptchaEnabled() && !gateToken) {
+      toast.error("Please complete the security check");
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await axios.post(`${serverURL}/api/admin/login`, loginData);
+      markAdminTermsAccepted();
+      const loginRecaptchaToken = isRecaptchaEnabled()
+        ? await executeRecaptchaV3("admin_login_submit")
+        : "";
+      const payload = {
+        ...loginData,
+        ...(isRecaptchaEnabled()
+          ? {
+              recaptchaToken: loginRecaptchaToken || gateToken,
+              recaptchaGateToken: gateToken,
+              recaptchaAction: "admin_login_submit",
+            }
+          : {}),
+      };
+      const response = await axios.post(`${serverURL}/api/admin/login`, payload);
       if (response?.status === 200) {
         if (response.data.requiresOtp) {
           setOtpToken(response.data.otpToken);
@@ -176,8 +263,32 @@ export function Login() {
           {step === "credentials" ? (
             <>
               <h2 className={style.heading}>Admin Sign In</h2>
-              <p className={style.sub}>Enter your credentials to continue.</p>
+              <p className={style.sub}>
+                {gateChecking
+                  ? "Running security check..."
+                  : gateError
+                    ? gateError
+                    : "Enter your credentials to continue."}
+              </p>
 
+              {gateChecking ? (
+                <div className={style.gateLoader}>
+                  <span className={style.btnSpinner} />
+                  <span>Checking reCAPTCHA...</span>
+                </div>
+              ) : null}
+
+              {!gateChecking && gateError ? (
+                <button
+                  type="button"
+                  className={style.secondaryBtn}
+                  onClick={() => window.location.reload()}
+                >
+                  Retry security check
+                </button>
+              ) : null}
+
+              {!gateChecking && !gateError ? (
               <form onSubmit={loginUser} className={style.form} noValidate>
                 <div className={style.fieldGroup}>
                   <label className={style.label} htmlFor="loginEmail">
@@ -225,7 +336,38 @@ export function Login() {
                   </div>
                 </div>
 
-                <button type="submit" className={style.submitBtn} disabled={loading}>
+                <label className={style.termsRow}>
+                  <input
+                    type="checkbox"
+                    className={style.termsCheckbox}
+                    checked={termsAgreed}
+                    onChange={(e) => setTermsAgreed(e.target.checked)}
+                  />
+                  <span className={style.termsText}>
+                    I agree to the{" "}
+                    <a
+                      href={`${publicSiteUrl}/terms-of-service`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a
+                      href={`${publicSiteUrl}/privacy-policy`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Privacy Policy
+                    </a>
+                  </span>
+                </label>
+
+                <button
+                  type="submit"
+                  className={style.submitBtn}
+                  disabled={loading || !canSubmitCredentials}
+                >
                   {loading ? (
                     <>
                       <span className={style.btnSpinner} /> Signing in…
@@ -236,7 +378,13 @@ export function Login() {
                     </>
                   )}
                 </button>
+                {isRecaptchaEnabled() ? (
+                  <p className={style.recaptchaNote}>
+                    Protected by reCAPTCHA v3. Site key: {getRecaptchaSiteKey().slice(0, 8)}...
+                  </p>
+                ) : null}
               </form>
+              ) : null}
             </>
           ) : (
             <>
@@ -338,6 +486,24 @@ export function Login() {
 
           <p className={style.footerNote}>
             Affiliatechatbox Admin Panel &copy; {new Date().getFullYear()}
+            <br />
+            <a
+              href={`${publicSiteUrl}/terms-of-service`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={style.footerLink}
+            >
+              Terms
+            </a>
+            {" · "}
+            <a
+              href={`${publicSiteUrl}/privacy-policy`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={style.footerLink}
+            >
+              Privacy
+            </a>
           </p>
         </div>
       </div>

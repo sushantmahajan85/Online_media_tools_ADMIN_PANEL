@@ -1,0 +1,17 @@
+.recaptchaWrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 78px;
+}
+
+.recaptchaFallback {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px dashed #d1d5db;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 12px;
+  text-align: center;
+}
