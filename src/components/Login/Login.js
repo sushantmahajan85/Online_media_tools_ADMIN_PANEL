@@ -10,19 +10,12 @@ import { getAdminHomePath } from "../../utils/adminProfile";
 import CryptoJS from "crypto-js";
 import {
   executeRecaptchaV3,
-  getRecaptchaSiteKey,
   isRecaptchaEnabled,
   loadRecaptchaScript,
 } from "../../utils/recaptcha";
-import {
-  hasAcceptedAdminTerms,
-  markAdminTermsAccepted,
-} from "../../utils/termsAcceptance";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
 const secretEnKey = process.env.REACT_APP_SECRET_ENC_KEY;
-const publicSiteUrl =
-  process.env.REACT_APP_PUBLIC_SITE_URL || "https://affiliatechatbox.com";
 
 function maskEmailForDisplay(email) {
   if (!email || !email.includes("@")) return "your email";
@@ -59,14 +52,9 @@ export function Login() {
   const [maskedEmail, setMaskedEmail] = useState("");
   const [otpInboxes, setOtpInboxes] = useState([]);
   const [devCode, setDevCode] = useState("");
-  const [termsAgreed, setTermsAgreed] = useState(false);
   const [gateChecking, setGateChecking] = useState(isRecaptchaEnabled());
   const [gateError, setGateError] = useState("");
   const [gateToken, setGateToken] = useState("");
-
-  useEffect(() => {
-    setTermsAgreed(hasAcceptedAdminTerms());
-  }, []);
 
   useEffect(() => {
     if (!isRecaptchaEnabled()) {
@@ -112,7 +100,7 @@ export function Login() {
   }, []);
 
   const canSubmitCredentials =
-    termsAgreed && (!isRecaptchaEnabled() || Boolean(gateToken));
+    !isRecaptchaEnabled() || Boolean(gateToken);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -126,10 +114,6 @@ export function Login() {
 
   async function loginUser(e) {
     e.preventDefault();
-    if (!termsAgreed) {
-      toast.error("Please accept the Terms of Service and Privacy Policy");
-      return;
-    }
     if (isRecaptchaEnabled() && !gateToken) {
       toast.error("Please complete the security check");
       return;
@@ -137,7 +121,6 @@ export function Login() {
 
     try {
       setLoading(true);
-      markAdminTermsAccepted();
       const loginRecaptchaToken = isRecaptchaEnabled()
         ? await executeRecaptchaV3("admin_login_submit")
         : "";
@@ -336,33 +319,6 @@ export function Login() {
                   </div>
                 </div>
 
-                <label className={style.termsRow}>
-                  <input
-                    type="checkbox"
-                    className={style.termsCheckbox}
-                    checked={termsAgreed}
-                    onChange={(e) => setTermsAgreed(e.target.checked)}
-                  />
-                  <span className={style.termsText}>
-                    I agree to the{" "}
-                    <a
-                      href={`${publicSiteUrl}/terms-of-service`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Terms of Service
-                    </a>{" "}
-                    and{" "}
-                    <a
-                      href={`${publicSiteUrl}/privacy-policy`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Privacy Policy
-                    </a>
-                  </span>
-                </label>
-
                 <button
                   type="submit"
                   className={style.submitBtn}
@@ -378,11 +334,6 @@ export function Login() {
                     </>
                   )}
                 </button>
-                {isRecaptchaEnabled() ? (
-                  <p className={style.recaptchaNote}>
-                    Protected by reCAPTCHA v3. Site key: {getRecaptchaSiteKey().slice(0, 8)}...
-                  </p>
-                ) : null}
               </form>
               ) : null}
             </>
@@ -486,24 +437,6 @@ export function Login() {
 
           <p className={style.footerNote}>
             Affiliatechatbox Admin Panel &copy; {new Date().getFullYear()}
-            <br />
-            <a
-              href={`${publicSiteUrl}/terms-of-service`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={style.footerLink}
-            >
-              Terms
-            </a>
-            {" · "}
-            <a
-              href={`${publicSiteUrl}/privacy-policy`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={style.footerLink}
-            >
-              Privacy
-            </a>
           </p>
         </div>
       </div>
