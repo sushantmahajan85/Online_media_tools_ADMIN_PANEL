@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "react-dropdown/style.css";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
@@ -7,6 +7,11 @@ import { toast } from "react-toastify";
 import { Button, CardBody, Input, Table } from "reactstrap";
 import { allusers, selecteUsers } from "../../Store/authSlice";
 import { displayText, formatJoiningDate, resolveProfileImageUrl } from "../../utils/userDisplay";
+import {
+  buildAlignedExportCsv,
+  downloadCsv,
+  exportStamp,
+} from "../../utils/csvExport";
 import { PRIMARY_SUPPORT_ADMIN_ID } from "../../constants/admin";
 import { DeleteModel } from "./DeleteModel";
 import style from "./ui.module.css";
@@ -31,7 +36,40 @@ const ProjectTables = () => {
   const [currentData, setcurrentData] = useState();
   const [modal, setModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+  const exportInFlightRef = useRef(false);
   const toggle = () => setModal(!modal);
+
+  const handleExport = async () => {
+    if (exportInFlightRef.current || isExporting) return;
+    exportInFlightRef.current = true;
+    setIsExporting(true);
+    try {
+      const [usersRes, postsRes] = await Promise.all([
+        axios.get(`${serverURL}/api/users/get_all_users`),
+        axios.get(`${serverURL}/api/posts/get_all_posts/0`),
+      ]);
+
+      const users = usersRes?.data?.users || [];
+      const posts = postsRes?.data?.posts || [];
+
+      if (users.length === 0 && posts.length === 0) {
+        toast.error("No data available to export");
+        return;
+      }
+
+      const stamp = exportStamp();
+      const csv = buildAlignedExportCsv(users, posts);
+      downloadCsv(`users_posts_export_${stamp}.csv`, csv);
+
+      toast.success(`Exported ${users.length} users and ${posts.length} posts`);
+    } catch {
+      toast.error("Failed to export data. Please try again.");
+    } finally {
+      exportInFlightRef.current = false;
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     async function refreshUsers() {
@@ -100,18 +138,40 @@ const ProjectTables = () => {
           </span>
         </div>
 
-        <button
-          type="button"
-          className={style.usersDeleteUnverifiedBtn}
-          onClick={() => {
-            setModal(!modal);
-            setpContent("Are you sure you want to delete all unverified users? This action cannot be undone.");
-            setdeleteWhatUsers("UnverifiedUsers");
-          }}
-        >
-          <i className="bi bi-person-x-fill" />
-          Delete Unverified
-        </button>
+        <div className={style.usersToolbarActions}>
+          <button
+            type="button"
+            className={style.usersExportBtn}
+            onClick={handleExport}
+            disabled={isExporting}
+            title="Export all users and posts (all statuses) as CSV"
+          >
+            {isExporting ? (
+              <>
+                <span className={style.usersExportSpinner} />
+                Exporting…
+              </>
+            ) : (
+              <>
+                <i className="bi bi-download" />
+                Export CSV
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className={style.usersDeleteUnverifiedBtn}
+            onClick={() => {
+              setModal(!modal);
+              setpContent("Are you sure you want to delete all unverified users? This action cannot be undone.");
+              setdeleteWhatUsers("UnverifiedUsers");
+            }}
+          >
+            <i className="bi bi-person-x-fill" />
+            Delete Unverified
+          </button>
+        </div>
       </div>
 
       {/* Table */}

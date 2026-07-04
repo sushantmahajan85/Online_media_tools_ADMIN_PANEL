@@ -1,10 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Col, Row } from "reactstrap";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import { toast } from "react-toastify";
 import { selecteUsers } from "../../Store/authSlice";
 import { displayText, formatJoiningDateTime, resolveProfileImageUrl } from "../../utils/userDisplay";
+import { buildAdminUserChatRoomId } from "../../utils/adminProfile";
+import {
+  buildChatExportCsv,
+  buildSingleUserExportCsv,
+  downloadCsv,
+  exportStamp,
+  fetchAllLoginHistory,
+  fetchUserChatExportRows,
+} from "../../utils/csvExport";
 import style from "./ui.module.css";
 
 const serverURL = process.env.REACT_APP_SERVER_URL;
@@ -78,6 +88,10 @@ export function UserDetailpage() {
     totalPages: 0,
     limit: HISTORY_PAGE_SIZE,
   });
+  const [isExportingInfo, setIsExportingInfo] = useState(false);
+  const [isExportingChats, setIsExportingChats] = useState(false);
+  const exportInfoRef = useRef(false);
+  const exportChatsRef = useRef(false);
 
   useEffect(() => {
     const current = storeUser.find((u) => String(u._id) === String(id));
@@ -195,6 +209,61 @@ export function UserDetailpage() {
     return fallback;
   }, [loginHistory, user]);
 
+  const handleExportUserInfo = async () => {
+    if (!id || !user || exportInfoRef.current || isExportingInfo) return;
+    exportInfoRef.current = true;
+    setIsExportingInfo(true);
+    try {
+      const [userRes, postsRes, loginHistoryAll] = await Promise.all([
+        axios.get(`${serverURL}/api/users/get_all_users?ids=${encodeURIComponent(id)}`),
+        axios.get(`${serverURL}/api/posts/get_user_posts/${id}`),
+        fetchAllLoginHistory(serverURL, id),
+      ]);
+
+      const exportUser = userRes.data?.users?.[0] || user;
+      const posts = postsRes.data?.posts || [];
+      const csv = buildSingleUserExportCsv(exportUser, posts, loginHistoryAll);
+
+      if (!csv) {
+        toast.error("No data available to export");
+        return;
+      }
+
+      const safeName = fullName.replace(/[^\w.-]+/g, "_").slice(0, 40) || "user";
+      downloadCsv(`${safeName}_info_${exportStamp()}.csv`, csv);
+      toast.success(`Exported profile, ${posts.length} posts, ${loginHistoryAll.length} logins`);
+    } catch {
+      toast.error("Failed to export user info. Please try again.");
+    } finally {
+      exportInfoRef.current = false;
+      setIsExportingInfo(false);
+    }
+  };
+
+  const handleExportChats = async () => {
+    if (!id || !user || exportChatsRef.current || isExportingChats) return;
+    exportChatsRef.current = true;
+    setIsExportingChats(true);
+    try {
+      const rows = await fetchUserChatExportRows(serverURL, id, fullName);
+      if (rows.length === 0) {
+        toast.error("No chats found for this user");
+        return;
+      }
+
+      const csv = buildChatExportCsv(rows);
+      const safeName = fullName.replace(/[^\w.-]+/g, "_").slice(0, 40) || "user";
+      const partnerCount = new Set(rows.map((r) => r.chatPartnerId)).size;
+      downloadCsv(`${safeName}_chats_${exportStamp()}.csv`, csv);
+      toast.success(`Exported ${rows.length} messages across ${partnerCount} conversations`);
+    } catch {
+      toast.error("Failed to export chats. Please try again.");
+    } finally {
+      exportChatsRef.current = false;
+      setIsExportingChats(false);
+    }
+  };
+
   return (
     <div className={style.udpPage}>
       {loadingUser && (
@@ -213,6 +282,46 @@ export function UserDetailpage() {
             <Col lg={4} md={5} xs={12}>
               <div className={style.udpHeroCard}>
                 <div className={style.udpHeroCover}>
+                  <div className={style.udpHeroExportActions}>
+                    <button
+                      type="button"
+                      className={style.udpHeroExportBtn}
+                      onClick={handleExportUserInfo}
+                      disabled={isExportingInfo || isExportingChats}
+                      title="Export profile, posts, and login history"
+                    >
+                      {isExportingInfo ? (
+                        <>
+                          <span className={style.udpHeroExportSpinner} />
+                          Exporting…
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-download" />
+                          Export Info
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className={style.udpHeroExportBtn}
+                      onClick={handleExportChats}
+                      disabled={isExportingInfo || isExportingChats}
+                      title="Export all chat partners and messages"
+                    >
+                      {isExportingChats ? (
+                        <>
+                          <span className={style.udpHeroExportSpinner} />
+                          Exporting…
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-chat-left-text" />
+                          Export Chats
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <div className={style.udpAvatarWrap}>
                     {avatarUrl ? (
                       <img
@@ -257,6 +366,16 @@ export function UserDetailpage() {
                   </div>
 
                   <div className={style.udpHeroActions}>
+                    <Link
+                      to={`/Admin/AdminDashboard/UserDetails/${id}/UserChats/${buildAdminUserChatRoomId(id)}/Chat`}
+                      className={style.udpActionCard}
+                    >
+                      <div className={`${style.udpActionIcon} ${style.udpActionIconPosts}`}>
+                        <i className="bi bi-chat-dots-fill" style={{ fontSize: 22, color: "#2962ff" }} />
+                      </div>
+                      <span className={style.udpActionLabel}>Message User</span>
+                      <span className={`bi bi-arrow-right-short ${style.udpActionArrow}`} />
+                    </Link>
                     <Link
                       to={`/Admin/AdminDashboard/UserDetails/${id}/Posts`}
                       className={style.udpActionCard}

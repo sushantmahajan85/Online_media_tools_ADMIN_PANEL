@@ -16,14 +16,14 @@ import {
 import {
   chatDocToRow,
   enrichChatRows,
-  filterKnownChats,
+  enrichChatsWithLatestActivity,
+  filterChatsByParticipantName,
   getBlockedChatParticipantIds,
   isAdminUserChat,
+  searchChatsByMessageContent,
 } from "../../utils/userChatMonitor";
-import axios from "axios";
 import style from "./ui.module.css";
 
-const serverURL = process.env.REACT_APP_SERVER_URL;
 const CHATS_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 400;
 
@@ -47,6 +47,7 @@ export function SecondaryAdminChats() {
 
   const searchModeRef = useRef(null);
   const searchDebounceRef = useRef(null);
+  const browseChatsRef = useRef([]);
 
   const setSearchMode = (mode) => {
     searchModeRef.current = mode;
@@ -74,9 +75,7 @@ export function SecondaryAdminChats() {
       storeUsers,
     });
 
-    return enriched.sort(
-      (a, b) => (b.timestamp?.getTime() ?? 0) - (a.timestamp?.getTime() ?? 0),
-    );
+    return enrichChatsWithLatestActivity(db, enriched);
   }, [adminIds, storeUsers]);
 
   useEffect(() => {
@@ -86,12 +85,16 @@ export function SecondaryAdminChats() {
       try {
         const chats = await loadAllAdminChats();
         if (!cancelled) {
+          browseChatsRef.current = chats;
           setBrowseChats(chats);
           setChatPage(1);
         }
       } catch (error) {
         console.error("Error loading admin chats:", error);
-        if (!cancelled) setBrowseChats([]);
+        if (!cancelled) {
+          browseChatsRef.current = [];
+          setBrowseChats([]);
+        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -111,71 +114,6 @@ export function SecondaryAdminChats() {
     return activeList.slice(start, start + CHATS_PAGE_SIZE);
   }, [activeList, chatPage]);
 
-  const runNameSearch = useCallback(
-    async (q) => {
-      setIsSearching(true);
-      try {
-        const response = await axios.get(
-          `${serverURL}/api/admin/chats/search-by-name`,
-          { params: { q, page: 1, limit: 500 } },
-        );
-        const chats = filterKnownChats(response.data?.chats || [])
-          .filter((chat) =>
-            isAdminUserChat(
-              chat.participants || [chat.senderId, chat.receiverId],
-              adminIds,
-            ),
-          )
-          .map((chat) => ({
-            ...chat,
-            chatLink: getSecondaryAdminUserChatLink(chat.chatId),
-          }));
-        setSearchChats(chats);
-        setChatPage(1);
-      } catch (error) {
-        console.error("Name search failed:", error);
-        setSearchChats([]);
-      } finally {
-        setIsSearching(false);
-        setIsLoading(false);
-      }
-    },
-    [adminIds],
-  );
-
-  const runMessageSearch = useCallback(
-    async (q) => {
-      setIsSearching(true);
-      try {
-        const response = await axios.get(
-          `${serverURL}/api/admin/chats/search-by-message`,
-          { params: { q, page: 1, limit: 500 } },
-        );
-        const chats = filterKnownChats(response.data?.chats || [])
-          .filter((chat) =>
-            isAdminUserChat(
-              chat.participants || [chat.senderId, chat.receiverId],
-              adminIds,
-            ),
-          )
-          .map((c) => ({
-            ...c,
-            lastMessage: c.matchedMessage || c.lastMessage,
-            chatLink: getSecondaryAdminUserChatLink(c.chatId),
-          }));
-        setSearchChats(chats);
-        setChatPage(1);
-      } catch (error) {
-        console.error("Message search failed:", error);
-        setSearchChats([]);
-      } finally {
-        setIsSearching(false);
-        setIsLoading(false);
-      }
-    },
-    [adminIds],
-  );
-
   useEffect(() => {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
 
@@ -191,22 +129,32 @@ export function SecondaryAdminChats() {
       return;
     }
 
-    searchDebounceRef.current = setTimeout(() => {
-      if (nameQ) {
-        setSearchMode("name");
-        setSearchMessage("");
-        runNameSearch(nameQ);
-      } else if (messageQ) {
-        setSearchMode("message");
-        setSearchName("");
-        runMessageSearch(messageQ);
+    searchDebounceRef.current = setTimeout(async () => {
+      const source = browseChatsRef.current;
+      setIsSearching(true);
+      try {
+        if (nameQ) {
+          setSearchMode("name");
+          setSearchChats(filterChatsByParticipantName(source, nameQ));
+          setChatPage(1);
+        } else if (messageQ) {
+          setSearchMode("message");
+          const results = await searchChatsByMessageContent(db, source, messageQ);
+          setSearchChats(results);
+          setChatPage(1);
+        }
+      } catch (error) {
+        console.error("Chat search failed:", error);
+        setSearchChats([]);
+      } finally {
+        setIsSearching(false);
       }
     }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     };
-  }, [searchName, searchMessage, runNameSearch, runMessageSearch]);
+  }, [searchName, searchMessage, browseChats]);
 
   const handlePrevPage = () => {
     if (chatPage <= 1) return;
@@ -222,7 +170,7 @@ export function SecondaryAdminChats() {
   const showList = !showSkeleton && viewChats.length > 0;
   const showEmpty =
     !showSkeleton && !isSearching && activeList.length === 0;
-  const showPagination = totalPages > 1 && !isSearching;
+  const showPagination = totalPages > 1;
 
   function getInitials(name) {
     if (!name || name === "Unknown") return "?";
@@ -364,21 +312,21 @@ export function SecondaryAdminChats() {
         )}
 
         {showPagination && (
-          <div className="d-flex align-items-center justify-content-between mt-3 px-1">
+          <div className={style.acpPagination}>
             <button
               type="button"
-              className="btn btn-sm btn-outline-secondary"
+              className={style.acpPageBtn}
               disabled={chatPage <= 1}
               onClick={handlePrevPage}
             >
               Previous
             </button>
-            <span className="small text-muted">
+            <span className={style.acpPageInfo}>
               Page {chatPage} of {totalPages}
             </span>
             <button
               type="button"
-              className="btn btn-sm btn-outline-secondary"
+              className={style.acpPageBtn}
               disabled={chatPage >= totalPages}
               onClick={handleNextPage}
             >

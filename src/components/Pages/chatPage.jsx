@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import style from "./ui.module.css";
 import { useParams } from "react-router-dom";
 import { db } from "../../firebase";
@@ -8,8 +8,13 @@ import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import axios from "axios";
 import {
+  buildAdminUserChatRoomId,
+  getAdminChatIdentityIds,
   getAdminChatParticipantId,
+  getAdminMongoUserId,
   isAdminChatParticipant,
+  isSecondaryAdmin,
+  PRIMARY_SUPPORT_ADMIN_ID,
 } from "../../utils/adminProfile";
 import { ChatComposer } from "./ChatComposer";
 import { uploadChatImage } from "../../utils/chatImageUpload";
@@ -32,14 +37,44 @@ export function Chat() {
     const storeUser = useSelector(selecteUsers);
     const adminAuth = useSelector(selectAdmin);
     const participantIds = getChatParticipantIds(chatId, currentChat);
-    const canSendMessages = isAdminChatParticipant(adminAuth, participantIds);
-    const activeAdminParticipantId = getAdminChatParticipantId(
+    const adminUserChatId = id ? buildAdminUserChatRoomId(id) : null;
+    const isAdminUserThread = Boolean(
+        chatId && adminUserChatId && String(chatId) === String(adminUserChatId),
+    );
+    const adminIdentityIds = useMemo(
+        () => new Set(getAdminChatIdentityIds(adminAuth)),
+        [adminAuth],
+    );
+    const isPeerMonitorChat = useMemo(() => {
+        if (!participantIds.length || isAdminUserThread) return false;
+        return !participantIds.some((pid) => adminIdentityIds.has(String(pid)));
+    }, [participantIds, isAdminUserThread, adminIdentityIds]);
+    const effectiveAdminParticipantId = useMemo(() => {
+        const fromRoom = getAdminChatParticipantId(adminAuth, participantIds);
+        if (fromRoom) return fromRoom;
+        if (isSecondaryAdmin(adminAuth)) {
+            return getAdminMongoUserId(adminAuth);
+        }
+        return PRIMARY_SUPPORT_ADMIN_ID;
+    }, [adminAuth, participantIds]);
+    const otherUserId = useMemo(() => {
+        if (isAdminUserThread && id) return String(id);
+        return participantIds.find(
+            (uid) => String(uid) !== String(effectiveAdminParticipantId),
+        );
+    }, [isAdminUserThread, id, participantIds, effectiveAdminParticipantId]);
+    const canSendMessages = useMemo(() => {
+        if (isPeerMonitorChat) return false;
+        if (isAdminUserThread) return Boolean(effectiveAdminParticipantId && otherUserId);
+        return isAdminChatParticipant(adminAuth, participantIds);
+    }, [
+        isPeerMonitorChat,
+        isAdminUserThread,
+        effectiveAdminParticipantId,
+        otherUserId,
         adminAuth,
         participantIds,
-    );
-    const otherUserId = participantIds.find(
-        (uid) => String(uid) !== String(activeAdminParticipantId),
-    );
+    ]);
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -104,6 +139,18 @@ export function Chat() {
                             (u) => String(u._id) === String(displayUserId),
                         );
                         SetCurrentChat({ ...chatData, user, participants: ids });
+                    } else if (
+                        id &&
+                        chatId === buildAdminUserChatRoomId(id)
+                    ) {
+                        const user = storeUser.find(
+                            (u) => String(u._id) === String(id),
+                        );
+                        SetCurrentChat({
+                            isRequested: "accepted",
+                            user,
+                            participants: getChatParticipantIds(chatId, null),
+                        });
                     } else {
                         toast.info("Chat Room document not found");
                     }
@@ -124,7 +171,7 @@ export function Chat() {
             const newChat = {
                 chatRoomId: chatId,
                 isRequested: "accepted",
-                users: [activeAdminParticipantId, otherUserId],
+                users: [effectiveAdminParticipantId, otherUserId],
                 timestamp: serverTimestamp(),
                 unreadCountFrom: 0,
                 unreadCountTo: 0,
@@ -137,7 +184,7 @@ export function Chat() {
     }
 
     async function deliverChatMessage({ text, messageType, imageUrl = null }) {
-        if (!canSendMessages || !activeAdminParticipantId || !otherUserId) return false;
+        if (!canSendMessages || !effectiveAdminParticipantId || !otherUserId) return false;
         const chatDocRef = doc(db, "chats", chatId);
         await ensureChatRoom(chatDocRef);
         const newMessage = {
@@ -146,7 +193,7 @@ export function Chat() {
             imageUrl: imageUrl || null,
             timestamp: Timestamp.fromDate(new Date()),
             receiverId: otherUserId,
-            senderId: activeAdminParticipantId,
+            senderId: effectiveAdminParticipantId,
             message: text,
         };
         const messagesCollectionRef = collection(db, "chats", chatId, "messages");
@@ -155,13 +202,14 @@ export function Chat() {
         await updateDoc(chatDocRef, {
             lastMessage,
             receiverId: otherUserId,
-            senderId: activeAdminParticipantId,
+            senderId: effectiveAdminParticipantId,
+            timestamp: serverTimestamp(),
         });
         axios
             .post(`${serverURL}/api/notification/chat`, {
                 message: lastMessage,
                 receiverId: otherUserId,
-                senderId: activeAdminParticipantId,
+                senderId: effectiveAdminParticipantId,
             })
             .catch((err) => console.log(err));
         return true;
@@ -188,7 +236,7 @@ export function Chat() {
         setIsUploading(true);
         try {
             const imageUrl = await uploadChatImage({
-                userId: activeAdminParticipantId,
+                userId: effectiveAdminParticipantId,
                 chatRoomId: chatId,
                 file,
             });
@@ -295,7 +343,7 @@ export function Chat() {
                             }
                             const isSent = canSendMessages
                                 ? String(item.senderId) ===
-                                  String(activeAdminParticipantId)
+                                  String(effectiveAdminParticipantId)
                                 : String(item.senderId) === String(participantIds[1]);
                             const senderUser = storeUser.find(
                                 (u) => String(u._id) === String(item.senderId),

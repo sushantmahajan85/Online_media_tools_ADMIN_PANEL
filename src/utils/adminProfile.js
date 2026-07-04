@@ -1,6 +1,16 @@
 /** Primary support account used for member-facing admin chat in the main app */
 export const PRIMARY_SUPPORT_ADMIN_ID = "658c582ff1bc8978d2300823";
 
+export function buildAdminUserChatRoomId(userId) {
+  const ids = [String(PRIMARY_SUPPORT_ADMIN_ID), String(userId)].sort();
+  return `${ids[0]}_${ids[1]}`;
+}
+
+export function isAdminUserChatRoom(chatId, userId) {
+  if (!chatId || !userId) return false;
+  return String(chatId) === buildAdminUserChatRoomId(userId);
+}
+
 export function getAdminMongoUserId(adminAuth) {
   if (!adminAuth) return null;
   return adminAuth.mongoUserId || adminAuth.mongoProfile?._id || null;

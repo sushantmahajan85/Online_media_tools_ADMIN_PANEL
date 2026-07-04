@@ -19,6 +19,7 @@ import { selectAdmin, selecteUsers } from "../../Store/authSlice";
 import {
   getAdminMongoUserId,
   getAdminUserChatSupportId,
+  isAdminChatParticipant,
   SECONDARY_ADMIN_HOME_PATH,
   SECONDARY_ADMIN_USER_CHATS_PATH,
 } from "../../utils/adminProfile";
@@ -68,9 +69,9 @@ export function SecondaryChatView() {
     (pid) => String(pid) !== String(adminParticipantId),
   );
   const canSendMessages =
-    requireAdminUserChat &&
     Boolean(adminParticipantId && otherUserId) &&
-    isAdminUserChat(participantIds, adminIds);
+    isAdminUserChat(participantIds, adminIds) &&
+    (requireAdminUserChat || isAdminChatParticipant(adminAuth, participantIds));
 
   const statusLabel = canSendMessages
     ? "Replying as support admin"
@@ -166,6 +167,7 @@ export function SecondaryChatView() {
       lastMessage,
       receiverId: otherUserId,
       senderId: adminParticipantId,
+      timestamp: serverTimestamp(),
     });
 
     axios
