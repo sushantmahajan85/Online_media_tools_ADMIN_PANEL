@@ -173,6 +173,131 @@ export function buildAlignedExportCsv(users, posts) {
   return buildCsv(rows, { order: ALIGNED_EXPORT_ORDER });
 }
 
+const REGIONAL_INDICATOR_BASE = 0x1f1e6;
+const REGIONAL_INDICATOR_END = 0x1f1ff;
+
+/** ISO 3166-1 alpha-2 from "IN", "🇮🇳", or similar stored flag values. */
+export function normalizeCountryCode(flag) {
+  if (!flag) return null;
+  const trimmed = String(flag).trim();
+  if (!trimmed) return null;
+
+  if (/^[a-z]{2}$/i.test(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+
+  const codePoints = Array.from(trimmed).map((char) => char.codePointAt(0) ?? 0);
+  if (
+    codePoints.length === 2 &&
+    codePoints.every(
+      (cp) => cp >= REGIONAL_INDICATOR_BASE && cp <= REGIONAL_INDICATOR_END
+    )
+  ) {
+    return String.fromCharCode(
+      ...codePoints.map((cp) => cp - REGIONAL_INDICATOR_BASE + 65)
+    );
+  }
+
+  return null;
+}
+
+export function formatCountryForExport(flagOrCode) {
+  const iso = normalizeCountryCode(flagOrCode) || (flagOrCode ? String(flagOrCode).trim() : "");
+  if (!iso) return "";
+  try {
+    if (/^[A-Z]{2}$/.test(iso)) {
+      const name = new Intl.DisplayNames(["en"], { type: "region" }).of(iso);
+      return name ? `${name} (${iso})` : iso;
+    }
+  } catch {
+    /* fall through */
+  }
+  return iso;
+}
+
+function userDisplayNameForExport(user) {
+  const full = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
+  return full || "";
+}
+
+function formatAccountForExport(user) {
+  const parts = [];
+  if (user?.isGoogleVerified) parts.push("Google");
+  if (user?.isLinkedinVerified) parts.push("LinkedIn");
+  return parts.join("; ");
+}
+
+function formatJoinedForExport(user) {
+  const raw =
+    user?.createdAt ?? user?.created_at ?? user?.joinedAt ?? user?.joined_at;
+  let ms = null;
+  if (raw) {
+    const t = new Date(raw).getTime();
+    if (!Number.isNaN(t)) ms = t;
+  }
+  if (ms == null) {
+    const id = user?._id;
+    if (typeof id === "string" && id.length === 24 && /^[a-f0-9]+$/i.test(id)) {
+      const sec = parseInt(id.slice(0, 8), 16);
+      if (!Number.isNaN(sec)) ms = sec * 1000;
+    }
+  }
+  if (ms == null) return "";
+  return new Date(ms).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatStatusForExport(user) {
+  if (!user?.firstName) return "";
+  if (user.isDeleted) return "Deleted";
+  if (user.isSuspended) return "Banned";
+  return "Active";
+}
+
+/**
+ * Matches the users table columns, plus Country and Phone Number.
+ * Country prefers the user's phone-country `flag`, then latest login country.
+ */
+export function buildUsersInfoExportRows(users, loginCountriesByUserId = {}) {
+  return (users || []).map((user) => {
+    const userId = String(user?._id || user?.userId || "");
+    const countrySource =
+      user?.flag || loginCountriesByUserId[userId] || "";
+    return {
+      Name: userDisplayNameForExport(user),
+      Email: user?.email || "",
+      Account: formatAccountForExport(user),
+      IP: user?.ipAddress || "",
+      Device: user?.device || "",
+      Joined: formatJoinedForExport(user),
+      Status: formatStatusForExport(user),
+      Country: formatCountryForExport(countrySource),
+      "Phone Number": user?.mobileNumber || "",
+    };
+  });
+}
+
+const USERS_INFO_EXPORT_ORDER = [
+  "Name",
+  "Email",
+  "Account",
+  "IP",
+  "Device",
+  "Joined",
+  "Status",
+  "Country",
+  "Phone Number",
+];
+
+export function buildUsersInfoExportCsv(users, loginCountriesByUserId = {}) {
+  const rows = buildUsersInfoExportRows(users, loginCountriesByUserId);
+  if (rows.length === 0) return "";
+  return buildCsv(rows, { order: USERS_INFO_EXPORT_ORDER });
+}
+
 export function buildSingleUserExportRows(user, posts, loginHistory) {
   const userFields = normalizeUserForExport(user);
   const rows = [];
@@ -248,6 +373,7 @@ export async function fetchAllLoginHistory(serverURL, userId) {
 const CHAT_EXPORT_ORDER = [
   "userId",
   "userName",
+  "chatId",
   "chatPartnerId",
   "chatPartnerName",
   "chatPartnerEmail",
@@ -258,86 +384,30 @@ const CHAT_EXPORT_ORDER = [
   "receiverId",
   "message",
   "timestamp",
-  "isRead",
+  "type",
+  "imageUrl",
   "fileUrl",
   "fileType",
-  "isLegacy",
-  "lastMessage",
-  "lastMessageAt",
+  "isRead",
 ];
 
+/**
+ * Full chat history for a user (all conversations, every message oldest→newest).
+ * Uses admin Firestore export — not conversation lastMessage previews.
+ */
 export async function fetchUserChatExportRows(serverURL, userId, userName) {
-  const convRes = await axios.get(`${serverURL}/api/chat/conversations/${userId}`);
-  const conversations = convRes.data?.conversations || [];
+  const res = await axios.get(
+    `${serverURL}/api/admin/chats/export/${encodeURIComponent(userId)}`
+  );
+  const rows = res.data?.messages || [];
 
-  if (conversations.length === 0) return [];
+  if (!rows.length) return [];
 
-  const partnerIds = conversations.map((c) => c.id).filter(Boolean);
-  let partnerMap = new Map();
-
-  if (partnerIds.length > 0) {
-    const usersRes = await axios.get(`${serverURL}/api/users/get_all_users`, {
-      params: { ids: partnerIds.join(",") },
-    });
-    partnerMap = new Map(
-      (usersRes.data?.users || []).map((u) => [String(u._id), u])
-    );
-  }
-
-  const rows = [];
-
-  for (const conv of conversations) {
-    const partner = partnerMap.get(String(conv.id));
-    const partnerEmail = partner?.email || "";
-
-    let history = [];
-    try {
-      const histRes = await axios.get(
-        `${serverURL}/api/chat/history/${userId}/${conv.id}`
-      );
-      history = histRes.data?.history || [];
-    } catch {
-      history = [];
-    }
-
-    if (history.length === 0) {
-      rows.push({
-        userId,
-        userName,
-        chatPartnerId: conv.id,
-        chatPartnerName: conv.name,
-        chatPartnerEmail: partnerEmail,
-        chatPartnerStatus: conv.accountStatus,
-        lastMessage: conv.lastMessage,
-        lastMessageAt: conv.time,
-      });
-      continue;
-    }
-
-    for (const msg of history) {
-      const senderId = String(msg.senderId?.toString?.() || msg.senderId || "");
-      rows.push({
-        userId,
-        userName,
-        chatPartnerId: conv.id,
-        chatPartnerName: conv.name,
-        chatPartnerEmail: partnerEmail,
-        chatPartnerStatus: conv.accountStatus,
-        messageId: String(msg._id || ""),
-        senderId,
-        senderName: senderId === String(userId) ? userName : conv.name,
-        receiverId: String(msg.receiverId?.toString?.() || msg.receiverId || ""),
-        message: msg.message,
-        timestamp: msg.timestamp,
-        isRead: msg.isRead,
-        fileUrl: msg.fileUrl,
-        fileType: msg.fileType,
-        isLegacy: msg.isLegacy,
-      });
-    }
-  }
-
-  return rows;
+  // Ensure subject display name is present even if backend fell back to id.
+  return rows.map((row) => ({
+    ...row,
+    userName: row.userName || userName || "",
+  }));
 }
 
 export function buildChatExportCsv(rows) {

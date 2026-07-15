@@ -8,7 +8,7 @@ import { Button, CardBody, Input, Table } from "reactstrap";
 import { allusers, selecteUsers } from "../../Store/authSlice";
 import { displayText, formatJoiningDate, resolveProfileImageUrl } from "../../utils/userDisplay";
 import {
-  buildAlignedExportCsv,
+  buildUsersInfoExportCsv,
   downloadCsv,
   exportStamp,
 } from "../../utils/csvExport";
@@ -45,26 +45,30 @@ const ProjectTables = () => {
     exportInFlightRef.current = true;
     setIsExporting(true);
     try {
-      const [usersRes, postsRes] = await Promise.all([
+      const [usersRes, countriesRes] = await Promise.all([
         axios.get(`${serverURL}/api/users/get_all_users`),
-        axios.get(`${serverURL}/api/posts/get_all_posts/0`),
+        axios
+          .get(`${serverURL}/api/users/latest_login_countries`)
+          .catch(() => ({ data: { countries: {} } })),
       ]);
 
-      const users = usersRes?.data?.users || [];
-      const posts = postsRes?.data?.posts || [];
+      const users = (usersRes?.data?.users || []).filter(
+        (user) => user._id !== EXCLUDED_ADMIN_ID
+      );
+      const loginCountries = countriesRes?.data?.countries || {};
 
-      if (users.length === 0 && posts.length === 0) {
-        toast.error("No data available to export");
+      if (users.length === 0) {
+        toast.error("No users available to export");
         return;
       }
 
       const stamp = exportStamp();
-      const csv = buildAlignedExportCsv(users, posts);
-      downloadCsv(`users_posts_export_${stamp}.csv`, csv);
+      const csv = buildUsersInfoExportCsv(users, loginCountries);
+      downloadCsv(`users_export_${stamp}.csv`, csv);
 
-      toast.success(`Exported ${users.length} users and ${posts.length} posts`);
+      toast.success(`Exported ${users.length} users`);
     } catch {
-      toast.error("Failed to export data. Please try again.");
+      toast.error("Failed to export users. Please try again.");
     } finally {
       exportInFlightRef.current = false;
       setIsExporting(false);
@@ -144,7 +148,7 @@ const ProjectTables = () => {
             className={style.usersExportBtn}
             onClick={handleExport}
             disabled={isExporting}
-            title="Export all users and posts (all statuses) as CSV"
+            title="Export users table data plus country and phone as CSV"
           >
             {isExporting ? (
               <>

@@ -4,9 +4,9 @@ import { Col, Row } from "reactstrap";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { selecteUsers } from "../../Store/authSlice";
+import { selectAdmin, selecteUsers } from "../../Store/authSlice";
 import { displayText, formatJoiningDateTime, resolveProfileImageUrl } from "../../utils/userDisplay";
-import { buildAdminUserChatRoomId } from "../../utils/adminProfile";
+import { buildAdminUserChatRoomId, getAdminBearerToken } from "../../utils/adminProfile";
 import {
   buildChatExportCsv,
   buildSingleUserExportCsv,
@@ -77,6 +77,7 @@ function InfoCard({ title, icon, children }) {
 
 export function UserDetailpage() {
   const storeUser = useSelector(selecteUsers);
+  const adminAuth = useSelector(selectAdmin);
   const { id } = useParams();
   const [user, setUser] = useState();
   const [loadingUser, setLoadingUser] = useState(false);
@@ -214,9 +215,16 @@ export function UserDetailpage() {
     exportInfoRef.current = true;
     setIsExportingInfo(true);
     try {
+      const adminToken = getAdminBearerToken(adminAuth);
+      const adminHeaders = adminToken
+        ? { Authorization: `Bearer ${adminToken}` }
+        : undefined;
+
       const [userRes, postsRes, loginHistoryAll] = await Promise.all([
         axios.get(`${serverURL}/api/users/get_all_users?ids=${encodeURIComponent(id)}`),
-        axios.get(`${serverURL}/api/posts/get_user_posts/${id}`),
+        axios.get(`${serverURL}/api/posts/get_user_posts/${id}`, {
+          headers: adminHeaders,
+        }),
         fetchAllLoginHistory(serverURL, id),
       ]);
 
@@ -255,7 +263,9 @@ export function UserDetailpage() {
       const safeName = fullName.replace(/[^\w.-]+/g, "_").slice(0, 40) || "user";
       const partnerCount = new Set(rows.map((r) => r.chatPartnerId)).size;
       downloadCsv(`${safeName}_chats_${exportStamp()}.csv`, csv);
-      toast.success(`Exported ${rows.length} messages across ${partnerCount} conversations`);
+      toast.success(
+        `Exported ${rows.length} messages across ${partnerCount} conversations`
+      );
     } catch {
       toast.error("Failed to export chats. Please try again.");
     } finally {
@@ -307,7 +317,7 @@ export function UserDetailpage() {
                       className={style.udpHeroExportBtn}
                       onClick={handleExportChats}
                       disabled={isExportingInfo || isExportingChats}
-                      title="Export all chat partners and messages"
+                      title="Export full chat history for this user (all conversations, all messages)"
                     >
                       {isExportingChats ? (
                         <>
